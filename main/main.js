@@ -216,6 +216,35 @@ app.whenReady().then(() => {
     const w = getMainWindow();
     if (w && !w.isDestroyed()) w.webContents.send(channel, payload);
   });
+
+  // ---- headless CLI mode: electron . --exec "SQL" --conn "connection name|id" ----
+  const execIdx = process.argv.indexOf('--exec');
+  if (execIdx > 0) {
+    const connName = process.argv[process.argv.indexOf('--conn') + 1] || '';
+    const sql = process.argv[execIdx + 1] || '';
+    (async () => {
+      try {
+        const conn = store.data.connections.find(c => c.name === connName || c.id === connName);
+        if (!conn) throw new Error('Connection not found: ' + connName);
+        await dbm.connect(conn.id);
+        const res = await dbm.query(conn.id, sql, null, { timeoutSec: 300 });
+        for (const set of res.results) {
+          if (set.fields && set.fields.length) {
+            console.log(set.fields.map(f => f.name).join('\t'));
+            for (const row of set.rows) console.log(set.fields.map(f => String(row[f.name] ?? 'NULL')).join('\t'));
+          } else console.log('OK');
+        }
+        console.error(`-- ${res.ms} ms`);
+      } catch (err) {
+        console.error('ERROR: ' + err.message);
+        app.exit(1);
+        return;
+      }
+      await dbm.closeAll();
+      app.exit(0);
+    })();
+    return; // no window in CLI mode
+  }
   registerIpc();
   buildMenu({ getMainWindow, store, openAbout, checkUpdates });
   createWindow();

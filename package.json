@@ -19,7 +19,8 @@
     "dist:portable": "electron-builder --win portable",
     "dist:linux": "electron-builder --linux AppImage",
     "dist:mac": "electron-builder --mac dmg",
-    "dist:all": "electron-builder -mwl"
+    "dist:all": "electron-builder -mwl",
+    "cli": "electron . --exec"
   },
   "dependencies": {
     "electron-updater": "^6.3.9",
