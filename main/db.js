@@ -583,8 +583,15 @@ class DBManager {
     }
     if (!exists || dropTarget) {
       const ddl = await this.tableDDL(fromConnId, fromDb, table);
-      await this.exec(toConnId, ddl, { db: toDb });
-      created = true;
+      // dedicated connection + USE: SHOW CREATE has no database prefix
+      const tconn = await this.pool(toConnId).getConnection();
+      try {
+        await tconn.query('USE ' + DBManager.escId(toDb));
+        await tconn.query(ddl);
+        created = true;
+      } finally {
+        tconn.release();
+      }
     }
 
     const cols = (await this.tableColumns(fromConnId, fromDb, table)).map(c => c.name);
@@ -933,17 +940,24 @@ class DBManager {
   }
 
   /** Execute a .sql script file (split on ; at line ends, respecting strings). */
-  async runSqlFile(connId, { filePath, onProgress }) {    const raw = fs.readFileSync(filePath, 'utf8');
+  async runSqlFile(connId, { filePath, db, onProgress }) {    const raw = fs.readFileSync(filePath, 'utf8');
     const statements = splitSqlStatements(raw);
     let done = 0, errors = 0;
-    for (const stmt of statements) {
-      if (!stmt.trim()) continue;
-      try { await this.exec(connId, stmt); }
-      catch (err) { errors++; if (onProgress) onProgress({ done, total: statements.length, error: err.message }); }
-      done++;
-      if (onProgress) onProgress({ done, total: statements.length });
+    // dedicated connection so USE (and everything after) stays on one session
+    const conn = await this.pool(connId).getConnection();
+    try {
+      if (db) await conn.query('USE ' + DBManager.escId(db));
+      for (const stmt of statements) {
+        if (!stmt.trim()) continue;
+        try { await conn.query(stmt); }
+        catch (err) { errors++; if (onProgress) onProgress({ done, total: statements.length, error: err.message }); }
+        done++;
+        if (onProgress) onProgress({ done, total: statements.length });
+      }
+    } finally {
+      conn.release();
     }
-    this._log('io', connId, `-- RUN SQL FILE ${filePath} (${done}/${statements.length} statements, ${errors} errors)`, null, done, errors === 0, errors ? errors + ' errors' : null, null);
+    this._log('io', connId, `-- RUN SQL FILE ${filePath} (${done}/${statements.length} statements, ${errors} errors${db ? ', db=' + db : ''})`, null, done, errors === 0, errors ? errors + ' errors' : null, db);
     return { statements: statements.length, done, errors };
   }
 
@@ -961,7 +975,8 @@ class DBManager {
       if (onProgress) onProgress({ done: i, total: targetTables.length, table: t });
       if (includeSchema) {
         const ddl = await this.tableDDL(connId, db, t);
-        await write('DROP TABLE IF EXISTS ' + DBManager.qRef(db, t) + ';\n' + ddl + ';\n\n');
+        // NOTE: no database prefix — restore targets whichever DB the importer selects
+        await write('DROP TABLE IF EXISTS ' + DBManager.escId(t) + ';\n' + ddl + ';\n\n');
       }
       if (includeData) {
         const pool = this.pool(connId);
@@ -974,7 +989,7 @@ class DBManager {
             n++;
             if (!fields) {
               fields = Object.keys(row);
-              await write('INSERT INTO ' + DBManager.qRef(db, t) + ' (' + fields.map(DBManager.escId).join(', ') + ') VALUES\n');
+              await write('INSERT INTO ' + DBManager.escId(t) + ' (' + fields.map(DBManager.escId).join(', ') + ') VALUES\n');
             } else {
               await write(',\n');
             }
@@ -988,8 +1003,10 @@ class DBManager {
     }
     if (includeViews) {
       for (const v of objs.views) {
-        const ddl = await this.tableDDL(connId, db, v.name);
-        await write('DROP VIEW IF EXISTS ' + DBManager.qRef(db, v.name) + ';\n' + ddl + ';\n\n');
+        let ddl = await this.tableDDL(connId, db, v.name);
+        // strip database prefix so the restore can target any database
+        ddl = ddl.split('`' + db + '`.').join('');
+        await write('DROP VIEW IF EXISTS ' + DBManager.escId(v.name) + ';\n' + ddl + ';\n\n');
       }
     }
     await write('SET FOREIGN_KEY_CHECKS=1;\n-- End of backup\n');

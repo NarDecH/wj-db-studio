@@ -98,7 +98,7 @@ export function importDialog(connId, db, table) {
       } else if (kindSel.value === 'json') {
         out = await window.wjds.importJson({ connId: cid, filePath: file, db: database, table: tbl, truncateFirst: truncChk.checked });
       } else {
-        out = await window.wjds.runSqlFile({ connId: cid, filePath: file });
+        out = await window.wjds.runSqlFile({ connId: cid, filePath: file, db: database || undefined });
       }
       const msg = kindSel.value === 'sql'
         ? `✓ ${out.done}/${out.statements} statements` + (out.errors ? `, ${out.errors} errors` : '')

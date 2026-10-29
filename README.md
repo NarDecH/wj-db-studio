@@ -8,7 +8,11 @@
 
 Developed by **Weeradech Jessadarom**
 
-[![Release](https://img.shields.io/badge/release-v1.0.0-blue)](../../releases)
+| Home | SQL Editor | ER Diagram |
+|---|---|---|
+| ![Home](docs/screenshots/01-home.png) | ![SQL editor](docs/screenshots/03-sql-editor.png) | ![ER](docs/screenshots/04-er-diagram.png) |
+
+[![Release](https://img.shields.io/badge/release-v1.1.0-blue)](../../releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](../../releases)
 
