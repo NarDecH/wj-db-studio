@@ -65,6 +65,15 @@ Complete capability map. Developed by **Weeradech Jessadarom**.
 - [x] **Error doctor** — maps ~12 common MySQL error classes to friendly bilingual advice
 - [x] Empty-state guidance (e.g., no connections yet)
 
+## SQL Log (audit trail)
+- [x] **Every executed statement is recorded**: editor queries, data-grid edits (INSERT/UPDATE/DELETE),
+      tree DDL operations, import/export/backup summaries, connect/disconnect events
+- [x] Daily JSONL files: `%APPDATA%\WJ DB Studio\logs\sql-YYYY-MM-DD.log`
+- [x] In-app viewer (bottom panel "SQL Log") with text filter and "errors only" toggle
+- [x] Click an entry to copy the SQL; open the log folder from Tools → SQL Log
+- [x] Parameterized values are **not** written to the log (statement + placeholder count only)
+- [x] Configurable on/off + retention in days (default 30, pruned on startup)
+
 ## Config & updates
 - [x] Settings: language, theme, font sizes, page size, timeout, auto-update, confirmations, autocomplete
 - [x] Atomic config writes, forward-compatible schema (defaults merge)

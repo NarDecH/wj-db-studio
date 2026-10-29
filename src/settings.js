@@ -22,6 +22,8 @@ export function showSettings(onApply) {
   const autoUpd = el('input', { type: 'checkbox' }); autoUpd.checked = !!s.autoUpdate;
   const confirmChk = el('input', { type: 'checkbox' }); confirmChk.checked = !!s.confirmDestructive;
   const acChk = el('input', { type: 'checkbox' }); acChk.checked = !!s.autoComplete;
+  const logChk = el('input', { type: 'checkbox' }); logChk.checked = s.sqlLog !== false;
+  const logDaysI = el('input', { type: 'number', min: '1', max: '365', value: s.sqlLogDays || 30 });
 
   const r = showModal({
     title: t('set.title'), icon: 'gear', width: '540px',
@@ -37,6 +39,8 @@ export function showSettings(onApply) {
       el('label', { class: 'check' }, autoUpd, el('span', { text: t('set.autoupdate') })),
       el('label', { class: 'check' }, confirmChk, el('span', { text: t('set.confirm') })),
       el('label', { class: 'check' }, acChk, el('span', { text: t('set.autocomplete') })),
+      el('label', { class: 'check' }, logChk, el('span', { text: t('set.sqllog') })),
+      el('div', { class: 'form-row' }, el('label', { text: t('set.sqllogdays') }), logDaysI),
       el('div', { class: 'res-msg', text: '🔒 ' + t('set.security') })),
     footer: [
       el('button', { class: 'btn', onclick: () => r.close(), text: t('conn.cancel') }),
@@ -55,6 +59,8 @@ export function showSettings(onApply) {
       autoUpdate: autoUpd.checked,
       confirmDestructive: confirmChk.checked,
       autoComplete: acChk.checked,
+      sqlLog: logChk.checked,
+      sqlLogDays: parseInt(logDaysI.value, 10) || 30,
     });
     toast(t('set.saved'), 'ok');
     r.close();

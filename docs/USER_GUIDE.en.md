@@ -43,7 +43,7 @@ Sidebar tree: connection → databases → (tables / views / procedures / functi
 - **Ctrl+Space** autocompletes keywords, table names and columns (from live schema).
 - **Ctrl+/** comments the selected lines.
 - The **Format SQL** button pretty-prints the statement.
-- Bottom panel: **Messages** (log), **History** (click to reuse), **Snippets** (saved queries).
+- Bottom panel: **Messages** (log), **History** (click to reuse), **Snippets** (saved queries), **SQL Log** (full audit — see §10).
 
 ## 5. Editing data
 
@@ -88,15 +88,26 @@ Right-click a table → **Table Designer** (or create a new one from the databas
 
 ## 9. Settings (Ctrl+,)
 
-Language (TH/EN) · theme · UI & editor font sizes · rows per page · query timeout · auto-update · destructive-action confirmation · autocomplete.
+Language (TH/EN) · theme · UI & editor font sizes · rows per page · query timeout · auto-update · destructive-action confirmation · autocomplete · SQL Log on/off + retention.
 
-## 10. Security notes
+## 10. SQL Log — full statement audit
+
+Every SQL statement the app executes (editor queries, grid edits, tree DDL operations,
+import/export/backup summaries, connect/disconnect) is recorded automatically:
+
+- Files: `%APPDATA%\WJ DB Studio\logs\sql-YYYY-MM-DD.log` (one JSONL file per day)
+- In-app: bottom panel → **SQL Log** tab (text filter, "errors only" toggle, click to copy SQL)
+- Open folder: **Tools → SQL Log** menu
+- Privacy: parameterized statement **values are never written** — only the statement with `?` and a value count
+- Settings: on/off + retention days (default 30, pruned at startup)
+
+## 11. Security notes
 
 - Passwords are encrypted with the OS keychain (Electron safeStorage → DPAPI on Windows) and never leave the machine.
 - No telemetry, no analytics, no network calls except to your database servers and GitHub update checks.
 - Grid edits use parameterized statements.
 
-## 11. Troubleshooting
+## 12. Troubleshooting
 
 | Symptom | Fix |
 |---|---|

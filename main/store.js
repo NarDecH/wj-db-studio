@@ -22,6 +22,8 @@ const DEFAULTS = {
     confirmDestructive: true,  // ask before DROP/TRUNCATE/DELETE
     showToolTips: true,
     autoComplete: true,
+    sqlLog: true,              // record every executed statement to local log file
+    sqlLogDays: 30,            // retention for sql logs
     sessionDatabase: true,     // remember last selected db per connection
   },
   connections: [],             // saved connection profiles

@@ -10,11 +10,22 @@ const path = require('path');
 const net = require('net');
 
 class DBManager {
-  constructor(store) {
+  constructor(store, sqllog) {
     this.store = store;
+    this.sqllog = sqllog || null;
     this.pools = new Map();      // connId -> mysql2 pool
     this.tunnels = new Map();    // connId -> ssh tunnel {client, server, port}
     this.seq = 0;
+  }
+
+  /** Central SQL audit hook — every statement passes through here. */
+  _log(type, connId, sql, ms, rows, ok, error, db) {
+    if (!this.sqllog) return;
+    const meta = this.store ? this.store.data.connections.find(c => c.id === connId) : null;
+    this.sqllog.write({
+      type, connId, conn: meta ? meta.name : connId, db,
+      sql, ms, rows, ok, error,
+    });
   }
 
   // ================= connection =================
@@ -59,7 +70,9 @@ class DBManager {
     await pool.query('SELECT 1');
     this.pools.set(connId, pool);
     this.store.touchConnection(connId);
-    return this.serverInfo(connId);
+    const info = await this.serverInfo(connId);
+    this._log('connect', connId, `-- connect ${info.flavor} ${info.version} @ ${secret.host}:${secret.port}`, null, null, true, null, null);
+    return info;
   }
 
   async _openTunnel(secret) {
@@ -89,6 +102,7 @@ class DBManager {
   }
 
   async close(connId) {
+    this._log('disconnect', connId, '-- disconnect', null, null, true, null, null);
     const pool = this.pools.get(connId);
     if (pool) { try { await pool.end(); } catch {} this.pools.delete(connId); }
     const tunnel = this.tunnels.get(connId);
@@ -124,19 +138,37 @@ class DBManager {
     const pool = this.pool(connId);
     const t0 = Date.now();
     const qopts = { timeout: (opts.timeoutSec || 30) * 1000 };
-    if (params) {
-      const [rows, fields] = await pool.query({ ...qopts, sql, values: params });
-      return { results: this._normalize([rows, fields]), ms: Date.now() - t0 };
+    try {
+      let results;
+      if (params) {
+        const [rows, fields] = await pool.query({ ...qopts, sql, values: params });
+        results = this._normalize([rows, fields]);
+      } else {
+        const [rows, fields] = await pool.query({ ...qopts, sql });
+        results = this._normalize([rows, fields]);
+      }
+      const ms = Date.now() - t0;
+      const rowCount = results.reduce((n, r) => n + (r.rows ? r.rows.length : 0), 0);
+      this._log('query', connId, sql, ms, rowCount, true, null, opts.db);
+      return { results, ms };
+    } catch (err) {
+      this._log('query', connId, sql, Date.now() - t0, null, false, err.message, opts.db);
+      throw err;
     }
-    const [rows, fields] = await pool.query({ ...qopts, sql });
-    return { results: this._normalize([rows, fields]), ms: Date.now() - t0 };
   }
 
   async exec(connId, sql, opts = {}) {
     const pool = this.pool(connId);
     const t0 = Date.now();
-    const [res] = await pool.query({ sql, timeout: (opts.timeoutSec || 60) * 1000 });
-    return { affected: res.affectedRows ?? null, insertId: res.insertId ?? null, ms: Date.now() - t0 };
+    try {
+      const [res] = await pool.query({ sql, timeout: (opts.timeoutSec || 60) * 1000 });
+      const ms = Date.now() - t0;
+      this._log('exec', connId, sql, ms, res.affectedRows ?? null, true, null, opts.db);
+      return { affected: res.affectedRows ?? null, insertId: res.insertId ?? null, ms };
+    } catch (err) {
+      this._log('exec', connId, sql, Date.now() - t0, null, false, err.message, opts.db);
+      throw err;
+    }
   }
 
   // ================= identifiers & escaping =================
@@ -342,8 +374,10 @@ class DBManager {
     function colsOf(o) { return Object.keys(o); }
 
     for (const del of deletes || []) {
-      const [res] = await this.pool(connId).query('DELETE FROM ' + tbl + ' WHERE ' + isWhere(del.keys) + ' LIMIT 1', keyParams(del.keys));
+      const delSql = 'DELETE FROM ' + tbl + ' WHERE ' + isWhere(del.keys) + ' LIMIT 1';
+      const [res] = await this.pool(connId).query(delSql, keyParams(del.keys));
       stats.deleted += res.affectedRows;
+      this._log('exec', connId, delSql + `  -- params: ${colsOf(del.keys).length} value(s), values not logged`, null, res.affectedRows, true, null, db);
     }
     for (const upd of updates || []) {
       const setCols = Object.keys(upd.values);
@@ -352,6 +386,7 @@ class DBManager {
         + ' WHERE ' + isWhere(upd.keys) + ' LIMIT 1';
       const [res] = await this.pool(connId).query(sql, [...setCols.map(c => upd.values[c]), ...keyParams(upd.keys)]);
       stats.updated += res.affectedRows;
+      this._log('exec', connId, sql + `  -- params: ${setCols.length + colsOf(upd.keys).length} value(s), values not logged`, null, res.affectedRows, true, null, db);
     }
     for (const ins of inserts || []) {
       const cols = Object.keys(ins.values);
@@ -359,6 +394,7 @@ class DBManager {
       const sql = 'INSERT INTO ' + tbl + ' (' + cols.map(c => DBManager.escId(c)).join(', ') + ') VALUES (' + cols.map(() => '?').join(', ') + ')';
       const [res] = await this.pool(connId).query(sql, cols.map(c => ins.values[c]));
       stats.inserted += res.affectedRows;
+      this._log('exec', connId, sql + `  -- params: ${cols.length} value(s), values not logged`, null, res.affectedRows, true, null, db);
     }
     return stats;
   }
@@ -603,6 +639,7 @@ class DBManager {
     } finally {
       conn.release();
     }
+    this._log('io', connId, `-- EXPORT ${format}${db && table ? ' ' + db + '.' + table : ''} (${count} rows) -> ${filePath}`, null, count, true, null, db);
     return { count, format, filePath };
   }
 
@@ -630,6 +667,7 @@ class DBManager {
       count += chunk.length;
       if (onProgress) onProgress({ done: count, total: dataRows.length });
     }
+    this._log('io', connId, `-- IMPORT CSV ${filePath} -> ${db}.${table} (${count} rows)`, null, count, true, null, db);
     return { count, columns: header };
   }
 
@@ -647,6 +685,7 @@ class DBManager {
       await this.exec(connId, base + '\n' + values);
       count += chunk.length;
     }
+    this._log('io', connId, `-- IMPORT JSON ${filePath} -> ${db}.${table} (${count} rows)`, null, count, true, null, db);
     return { count, columns: header };
   }
 
@@ -662,6 +701,7 @@ class DBManager {
       done++;
       if (onProgress) onProgress({ done, total: statements.length });
     }
+    this._log('io', connId, `-- RUN SQL FILE ${filePath} (${done}/${statements.length} statements, ${errors} errors)`, null, done, errors === 0, errors ? errors + ' errors' : null, null);
     return { statements: statements.length, done, errors };
   }
 
@@ -713,6 +753,7 @@ class DBManager {
     await write('SET FOREIGN_KEY_CHECKS=1;\n-- End of backup\n');
     out.end();
     await new Promise((res) => out.on('close', res));
+    this._log('io', connId, `-- BACKUP ${db} (${targetTables.length} tables) -> ${filePath}`, null, targetTables.length, true, null, db);
     return { filePath, tables: targetTables.length };
   }
 }

@@ -357,7 +357,7 @@ function buildEditorView(tab, view, connId, db) {
     results.innerHTML = '';
 
     try {
-      const res = await window.wjds.dbQuery(connId, sql, null, { timeoutSec: state.settings.queryTimeout });
+      const res = await window.wjds.dbQuery(connId, sql, null, { timeoutSec: state.settings.queryTimeout, db });
       showResults(res);
       pushHistory(sql, true, res.ms);
     } catch (err) {

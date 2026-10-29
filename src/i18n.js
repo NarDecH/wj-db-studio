@@ -8,7 +8,8 @@ export const I18N = {
     'tb.export': 'Export', 'tb.backup': 'Backup', 'tb.server': 'Server', 'tb.users': 'Users',
     'side.explorer': 'Object Explorer', 'side.filter': 'Filter objects…',
     'bp.messages': 'Messages', 'bp.history': 'History', 'bp.snippets': 'Snippets', 'bp.clear': 'Clear',
-    'bp.newsnippet': 'New snippet',
+    'bp.newsnippet': 'New snippet', 'bp.sqllog': 'SQL Log',
+    'sqllog.filter': 'Filter SQL…', 'sqllog.onlyerr': 'Errors only', 'sqllog.empty': 'No SQL logged yet — run a query and it will appear here.',
     'st.notconnected': 'Not connected', 'st.ready': 'Ready',
 
     'conn.title': 'Connections', 'conn.new': 'New Connection', 'conn.edit': 'Edit Connection',
@@ -86,6 +87,8 @@ export const I18N = {
     'set.timeout': 'Query timeout (seconds)', 'set.autoupdate': 'Check for updates automatically',
     'set.confirm': 'Confirm destructive operations (DROP/TRUNCATE/DELETE)',
     'set.autocomplete': 'SQL autocomplete', 'set.saved': 'Settings saved',
+    'set.sqllog': 'Record SQL log (every executed statement, local file only)',
+    'set.sqllogdays': 'Keep SQL log (days)',
     'set.security': 'Passwords are encrypted with your OS keychain and never leave this computer. No telemetry is collected.',
 
     'help.title': 'Help', 'help.search': 'Search help…',
@@ -112,7 +115,8 @@ export const I18N = {
     'tb.export': 'ส่งออก', 'tb.backup': 'สำรอง', 'tb.server': 'เซิร์ฟเวอร์', 'tb.users': 'ผู้ใช้',
     'side.explorer': 'สำรวจออบเจกต์', 'side.filter': 'ค้นหาออบเจกต์…',
     'bp.messages': 'ข้อความ', 'bp.history': 'ประวัติ', 'bp.snippets': 'ตัวอย่าง SQL', 'bp.clear': 'ล้าง',
-    'bp.newsnippet': 'สร้างตัวอย่าง',
+    'bp.newsnippet': 'สร้างตัวอย่าง', 'bp.sqllog': 'SQL Log',
+    'sqllog.filter': 'กรอง SQL…', 'sqllog.onlyerr': 'เฉพาะที่ผิดพลาด', 'sqllog.empty': 'ยังไม่มี SQL ที่ถูกบันทึก — รันคำสั่งแล้วจะปรากฏที่นี่',
     'st.notconnected': 'ยังไม่ได้เชื่อมต่อ', 'st.ready': 'พร้อมใช้งาน',
 
     'conn.title': 'การเชื่อมต่อ', 'conn.new': 'เชื่อมต่อใหม่', 'conn.edit': 'แก้ไขการเชื่อมต่อ',
@@ -190,6 +194,8 @@ export const I18N = {
     'set.timeout': 'หมดเวลาคำสั่ง (วินาที)', 'set.autoupdate': 'ตรวจสอบการอัปเดตอัตโนมัติ',
     'set.confirm': 'ยืนยันก่อนคำสั่งที่ลบข้อมูล (DROP/TRUNCATE/DELETE)',
     'set.autocomplete': 'ช่วยเติม SQL อัตโนมัติ', 'set.saved': 'บันทึกการตั้งค่าแล้ว',
+    'set.sqllog': 'บันทึก SQL Log (ทุกคำสั่งที่รัน เก็บเป็นไฟล์ในเครื่องนี้เท่านั้น)',
+    'set.sqllogdays': 'เก็บ SQL Log ไว้ (วัน)',
     'set.security': 'รหัสผ่านถูกเข้ารหัสด้วย keychain ของระบบปฏิบัติการ และไม่ออกจากเครื่องนี้ ไม่มีการส่งข้อมูล (telemetry) ใดๆ',
 
     'help.title': 'ช่วยเหลือ', 'help.search': 'ค้นหาวิธีใช้…',

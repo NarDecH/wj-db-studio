@@ -8,6 +8,7 @@ const path = require('path');
 const pkg = require('../package.json');
 const { Store } = require('./store');
 const { DBManager } = require('./db');
+const { SQLLog } = require('./sqllog');
 const { setupUpdater } = require('./updater');
 const { buildMenu } = require('./appmenu');
 
@@ -24,6 +25,7 @@ app.setName('WJ DB Studio');
 
 let store = null;
 let dbm = null;
+let sqllog = null;
 let mainWindow = null;
 
 function getMainWindow() { return mainWindow && !mainWindow.isDestroyed() ? mainWindow : null; }
@@ -109,6 +111,10 @@ function registerIpc() {
   ipcMain.handle('store:snippets:delete', (_e, id) => store.deleteSnippet(id));
   ipcMain.handle('store:tourDone', () => store.setTourDone());
 
+  // ---- sql log ----
+  ipcMain.handle('sqllog:read', (_e, limit) => sqllog.read(limit || 400));
+  ipcMain.handle('sqllog:openFolder', () => { shell.openPath(sqllog.openFolder()); return true; });
+
   // ---- database ----
   ipcMain.handle('db:connect', async (_e, id) => {
     try { return { ok: true, info: await dbm.connect(id) }; }
@@ -168,7 +174,9 @@ function checkUpdates() {
 
 app.whenReady().then(() => {
   store = new Store();
-  dbm = new DBManager(store);
+  sqllog = new SQLLog({ userDataDir: app.getPath('userData'), store });
+  sqllog.prune(store.getSettings().sqlLogDays || 30);
+  dbm = new DBManager(store, sqllog);
   registerIpc();
   buildMenu({ getMainWindow, store, openAbout, checkUpdates });
   createWindow();

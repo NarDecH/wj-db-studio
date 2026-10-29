@@ -17,6 +17,7 @@ import { openServerDashboard, openProcessList, openUsers } from './servertools.j
 import { showSettings, showAbout, showShortcuts } from './settings.js';
 import { initHelp, toggleHelp, showHelp } from './help.js';
 import { initUpdateBadge } from './updaterui.js';
+import { initSqlLogUI, renderSqlLog } from './sqllogui.js';
 
 export const version = '1.0.0';
 
@@ -138,6 +139,7 @@ function initBottomPanel() {
     $('#bp-' + b.dataset.bp).classList.add('active');
     if (b.dataset.bp === 'history') renderHistory();
     if (b.dataset.bp === 'snippets') renderSnippets();
+    if (b.dataset.bp === 'sqllog') renderSqlLog();
   }));
   $('#bp-toggle').addEventListener('click', () => {
     const bp = $('#bottompanel');
@@ -246,6 +248,7 @@ function initMenuActions() {
       case 'shortcuts': showShortcuts(); break;
       case 'about': showAbout(version); break;
       case 'check-updates': import('./updaterui.js').then(m => m.checkUpdatesFlow()); break;
+      case 'open-sqllog': import('./sqllogui.js').then(m => { m.renderSqlLog(); document.querySelector('[data-bp="sqllog"]')?.click(); }); break;
       case 'connect-active': {
         const meta = connMeta(state.currentConnId);
         if (meta) await window.wjds.dbConnect(meta.id);
@@ -284,6 +287,7 @@ async function boot() {
   initKeys();
   initMenuActions();
   initHelp();
+  initSqlLogUI();
   initUpdateBadge();
   initTree({
     onConnectStatus: (id, info) => {

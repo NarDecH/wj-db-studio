@@ -58,6 +58,7 @@
           <button class="bp-tab active" data-bp="messages"><span data-icon="info"></span><span data-i18n="bp.messages">Messages</span></button>
           <button class="bp-tab" data-bp="history"><span data-icon="history"></span><span data-i18n="bp.history">History</span></button>
           <button class="bp-tab" data-bp="snippets"><span data-icon="bookmark"></span><span data-i18n="bp.snippets">Snippets</span></button>
+          <button class="bp-tab" data-bp="sqllog"><span data-icon="file"></span><span data-i18n="bp.sqllog">SQL Log</span></button>
           <span class="bp-spacer"></span>
           <button id="bp-toggle" class="mini-btn" data-tip="Show/hide panel / ซ่อน-แสดงแผง"><span data-icon="chevron-down"></span></button>
         </div>
@@ -70,6 +71,15 @@
           <div id="bp-snippets" class="bp-pane">
             <div class="pane-tools"><button id="snippet-add" class="mini-btn"><span data-icon="plus"></span><span data-i18n="bp.newsnippet">New snippet</span></button></div>
             <div id="snippet-list" class="bp-list"></div>
+          </div>
+          <div id="bp-sqllog" class="bp-pane">
+            <div class="pane-tools" style="display:flex; gap:6px; align-items:center;">
+              <input id="sqllog-filter" type="text" data-i18n-ph="sqllog.filter" placeholder="Filter…" style="width:220px; padding:3px 8px; font-size:11.5px;">
+              <label class="check" style="font-size:11.5px;"><input type="checkbox" id="sqllog-onlyerr"><span data-i18n="sqllog.onlyerr">Errors only</span></label>
+              <button id="sqllog-refresh" class="mini-btn icon-only" title="Refresh"><span data-icon="refresh"></span></button>
+              <button id="sqllog-folder" class="mini-btn" data-tip="Open log folder / เปิดโฟลเดอร์ log"><span data-icon="folder"></span></button>
+            </div>
+            <div id="sqllog-list" class="bp-list" style="padding-top:30px;"></div>
           </div>
         </div>
       </div>

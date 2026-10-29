@@ -34,6 +34,10 @@ const api = {
   deleteSnippet: (id) => invoke('store:snippets:delete')(id),
   setTourDone: invoke('store:tourDone'),
 
+  // sql log
+  sqllogRead: (limit) => invoke('sqllog:read')(limit),
+  sqllogOpenFolder: invoke('sqllog:openFolder'),
+
   // database
   dbConnect: (connId) => invoke('db:connect')(connId),
   dbDisconnect: (connId) => invoke('db:disconnect')(connId),

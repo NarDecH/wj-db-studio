@@ -7,6 +7,7 @@ Developed by **Weeradech Jessadarom**.
 | Data | Where | Protection |
 |---|---|---|
 | Settings, snippets, query history | `%APPDATA%\WJ DB Studio\config.json` | plain JSON (no secrets inside) |
+| **SQL Log** (every executed statement) | `%APPDATA%\WJ DB Studio\logs\sql-*.log` (daily JSONL, retention configurable, default 30 days) | plain text, local only; **parameterized values are not logged** — statements with `?` placeholders and value counts only |
 | Database passwords | same file, `passwordEnc` field | **OS-encrypted** via Electron `safeStorage` (Windows: DPAPI tied to the user account; macOS: Keychain; Linux: libsecret) |
 | SSH passwords | same file, `ssh.passwordEnc` | same encryption |
 

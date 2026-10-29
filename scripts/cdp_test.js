@@ -116,6 +116,17 @@ ws.addEventListener('open', async () => {
     out.resultFirstRow = await ev(`(document.querySelector('.view.active .res-grid-wrap .dgrid tbody tr')?.textContent || '').slice(0, 120)`);
     out.hlColored = await ev(`document.querySelectorAll('.view.active .ed-hl .tk-kw').length`);
 
+    // 6) SQL Log: open the bottom-panel tab and read entries
+    out.sqllogTabClick = await ev(`(() => {
+      const btn = document.querySelector('[data-bp="sqllog"]');
+      if (!btn) return 'no-tab';
+      btn.click();
+      return 'ok';
+    })()`);
+    await sleep(1200);
+    out.sqllogEntries = await ev(`[...document.querySelectorAll('#sqllog-list .bp-item')].map(x => x.textContent.slice(0, 100)).slice(0, 10)`);
+    out.sqllogErrorRows = await ev(`[...document.querySelectorAll('#sqllog-list .bp-item .err')].length`);
+
     out.errors = errors;
     console.log(JSON.stringify(out, null, 1));
 
