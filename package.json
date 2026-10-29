@@ -5,10 +5,10 @@
   "description": "WJ DB Studio — a fast, modern, zero-setup database manager for MySQL and MariaDB",
   "author": "Weeradech Jessadarom",
   "license": "MIT",
-  "homepage": "https://github.com/weeradech/wj-db-studio#readme",
+  "homepage": "https://github.com/NarDecH/wj-db-studio#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/weeradech/wj-db-studio.git"
+    "url": "https://github.com/NarDecH/wj-db-studio.git"
   },
   "main": "main/main.js",
   "scripts": {

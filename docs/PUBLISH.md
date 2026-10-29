@@ -6,14 +6,14 @@
 
 1. **สร้าง repository บน GitHub** (เว็บ): New repository → ชื่อ เช่น `wj-db-studio` → Public → ไม่ต้องใส่ README (เรามีแล้ว)
 
-2. **แก้ชื่อ repo ของคุณใน 3 จุด** (แทน `weeradech/wj-db-studio`):
+2. **แก้ชื่อ repo ของคุณใน 3 จุด** (แทน `NarDecH/wj-db-studio`):
    - `package.json` → `"homepage"`, `"repository.url"`, `"build.publish.owner"`, `"build.publish.repo"`
    - `src/settings.js` → ลิงก์ GitHub Releases ในหน้า About
    - `README.md` / `README.th.md` → ลิงก์ Releases
 
 3. **Push ครั้งแรก:**
    ```bash
-   git remote add origin https://github.com/USERNAME/wj-db-studio.git
+   git remote add origin https://github.com/NarDecH/wj-db-studio.git
    git push -u origin main
    ```
 

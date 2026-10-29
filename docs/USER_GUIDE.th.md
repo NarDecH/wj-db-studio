@@ -5,7 +5,7 @@
 
 ## 1. การติดตั้ง
 
-ไม่ต้องติดตั้ง — เลือกไฟล์จากหน้า [Releases](https://github.com/weeradech/wj-db-studio/releases):
+ไม่ต้องติดตั้ง — เลือกไฟล์จากหน้า [Releases](https://github.com/NarDecH/wj-db-studio/releases):
 
 | ไฟล์ | เหมาะกับ |
 |---|---|

@@ -82,7 +82,7 @@ export function showAbout(version) {
       el('div', { class: 'author' }, t('about.developed'), el('br'), el('b', { style: { fontSize: '16px' }, text: 'Weeradech Jessadarom' })),
       el('p', { text: t('about.desc') }),
       el('p', {}, t('about.license'), el('br'),
-        el('a', { text: 'GitHub Releases', onclick: () => window.wjds.openExternal('https://github.com/weeradech/wj-db-studio/releases') })),
+        el('a', { text: 'GitHub Releases', onclick: () => window.wjds.openExternal('https://github.com/NarDecH/wj-db-studio/releases') })),
       el('p', { text: '🛡 ' + t('about.privacy') }),
       el('div', { style: { display: 'flex', gap: '8px', justifyContent: 'center' } }, checkBtn),
       statusLine),

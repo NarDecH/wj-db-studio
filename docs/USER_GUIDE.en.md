@@ -6,7 +6,7 @@
 
 ## 1. Installation
 
-No setup required. Grab a file from [Releases](https://github.com/weeradech/wj-db-studio/releases):
+No setup required. Grab a file from [Releases](https://github.com/NarDecH/wj-db-studio/releases):
 
 | File | Best for |
 |---|---|

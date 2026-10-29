@@ -11,7 +11,7 @@ Developed by **Weeradech Jessadarom**. MIT licensed.
 ## One-time setup
 
 ```bash
-git clone https://github.com/weeradech/wj-db-studio.git
+git clone https://github.com/NarDecH/wj-db-studio.git
 cd wj-db-studio
 npm install
 ```
