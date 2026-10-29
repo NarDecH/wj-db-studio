@@ -80,6 +80,8 @@ export const ICONS = {
   doc: S('<path d="M6 3h8l4 4v14H6V3z"/><path d="M14 3v4h4M9 12h6M9 15.5h6"/>'),
   bug: S('<circle cx="12" cy="13" r="5"/><path d="M12 8V6m-4.5 2L6 6.5M16.5 8 18 6.5M4.5 13H7m10 0h2.5M6 18l1.5-1.5M18 18l-1.5-1.5M12 8a5 5 0 0 0-5 5"/>'),
   key2: S('<circle cx="15.5" cy="9" r="4.5"/><path d="m12.5 12-7 7m0 0 2 2m-2-2 2.5-2.5" transform="translate(-1 -1)"/>'),
+  compare: S('<rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/><path d="M11 12h2"/>'),
+  minus: S('<path d="M5 12h14"/>'),
   format: S('<path d="M4 5h16M7 9h10M7 13h10M4 17h16" opacity=".85"/>'),
   refreshDb: S('<ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5V18.5c0 1.66 3.58 3 8 3a13 13 0 0 0 3-.35"/><path d="M20 5.5v6"/><path d="M17 20a4.5 4.5 0 1 0-3.5-7.3"/><path d="M17 17.5v2.5m0-2.5h-2.5" transform="translate(0 -0.5)"/>'),
 };

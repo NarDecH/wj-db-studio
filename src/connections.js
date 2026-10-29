@@ -26,6 +26,8 @@ export function openConnectionDialog(opts = {}) {
   const roChk = el('input', { type: 'checkbox' });
   roChk.checked = !!(conn && conn.readOnly);
   const sslCa = el('input', { type: 'text', value: conn ? (conn.sslCa || '') : '', placeholder: 'C:\\path\\ca.pem' });
+  const verifyChk = el('input', { type: 'checkbox' });
+  verifyChk.checked = !!(conn && conn.sslVerify);
   const caBrowse = el('button', { class: 'mini-btn', text: '…', onclick: async () => {
     const f = await window.wjds.pickFile({ title: 'CA certificate', filters: [{ name: 'PEM', extensions: ['pem', 'crt', 'cer'] }] });
     if (f) sslCa.value = f;
@@ -64,6 +66,7 @@ export function openConnectionDialog(opts = {}) {
           el('div', {}, fieldLabel(t('conn.user')), user)),
         row(t('conn.pass'), pass),
         el('label', { class: 'check' }, ssl, el('span', { text: t('conn.ssl') })),
+        el('label', { class: 'check', style: { marginLeft: '22px' } }, verifyChk, el('span', { text: '✓ ' + t('conn.sslverify') })),
         el('label', { class: 'check', title: t('conn.readonly') }, roChk, el('span', { text: '🔒 ' + t('conn.readonly') })),
         row(t('conn.sslca'), el('div', { style: { display: 'flex', gap: '6px' } }, sslCa, caBrowse)))),
     el('fieldset', {},
@@ -85,6 +88,7 @@ export function openConnectionDialog(opts = {}) {
       password: pass.value || undefined,
       clearPassword: !pass.value && !ssl.checked ? undefined : undefined,
       ssl: ssl.checked,
+      sslVerify: verifyChk.checked,
       sslCa: sslCa.value.trim(),
       readOnly: roChk.checked,
       ssh: {
@@ -217,6 +221,40 @@ export function createDatabaseDialog(meta, onDone) {
 export async function disconnectAll() {
   for (const id of [...state.active.keys()]) {
     await window.wjds.dbDisconnect(id);
+  }
+}
+
+/** Export all connections (without passwords) to a JSON file. */
+export async function exportConnections() {
+  const list = state.connections.map(c => {
+    const { passwordEnc, ssh, ...rest } = c;
+    const { passwordEnc: _p, ...sshSafe } = ssh || {};
+    return { ...rest, ssh: sshSafe };
+  });
+  const f = await window.wjds.pickSaveFile({ title: t('connx.export'), defaultPath: 'wjds-connections.json', filters: [{ name: 'JSON', extensions: ['json'] }] });
+  if (!f) return;
+  await window.wjds.writeFile(f, JSON.stringify({ app: 'wj-db-studio', version: 1, connections: list }, null, 2));
+  toast(t('connx.exported', { n: list.length, f }), 'ok');
+}
+
+/** Import connections from a JSON file (passwords must be re-entered). */
+export async function importConnections() {
+  const f = await window.wjds.pickFile({ title: t('connx.import'), filters: [{ name: 'JSON', extensions: ['json'] }] });
+  if (!f) return;
+  try {
+    const data = JSON.parse(await window.wjds.readFile(f, 5));
+    const list = Array.isArray(data) ? data : (data.connections || []);
+    let n = 0;
+    for (const c of list) {
+      if (!c.host) continue;
+      await window.wjds.saveConnection({ ...c, id: undefined, name: c.name || `${c.host}:${c.port}`, password: '' });
+      n++;
+    }
+    await loadConnections();
+    toast(t('connx.imported', { n }), 'ok');
+    import('./tree.js').then(m => m.refreshTree && m.refreshTree());
+  } catch (err) {
+    toast(t('msg.error'), 'err', err.message);
   }
 }
 

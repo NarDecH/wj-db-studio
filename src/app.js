@@ -302,6 +302,9 @@ function initMenuActions() {
       case 'check-updates': import('./updaterui.js').then(m => m.checkUpdatesFlow()); break;
       case 'open-sqllog': import('./sqllogui.js').then(m => { m.renderSqlLog(); document.querySelector('[data-bp="sqllog"]')?.click(); }); break;
       case 'transfer': import('./transfer.js').then(m => m.transferDialog()); break;
+      case 'schema-compare': import('./schemacompare.js').then(m => m.compareDialog()); break;
+      case 'export-connections': import('./connections.js').then(m => m.exportConnections()); break;
+      case 'import-connections': import('./connections.js').then(m => m.importConnections()); break;
       case 'connect-active': {
         const meta = connMeta(state.currentConnId);
         if (meta) await window.wjds.dbConnect(meta.id);

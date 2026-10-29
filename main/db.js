@@ -72,8 +72,8 @@ class DBManager {
       timezone: 'Z',
       ...(secret.ssl ? {
         ssl: secret.sslCa
-          ? { ca: fs.readFileSync(secret.sslCa), rejectUnauthorized: false, minVersion: 'TLSv1.2' }
-          : { rejectUnauthorized: false, minVersion: 'TLSv1.2' },
+          ? { ca: fs.readFileSync(secret.sslCa), rejectUnauthorized: !!secret.sslVerify, minVersion: 'TLSv1.2' }
+          : { rejectUnauthorized: !!secret.sslVerify, minVersion: 'TLSv1.2' },
       } : {}),
     };
 
@@ -560,6 +560,90 @@ class DBManager {
     if (fk.onDelete) s += ' ON DELETE ' + fk.onDelete;
     if (fk.onUpdate) s += ' ON UPDATE ' + fk.onUpdate;
     return s;
+  }
+
+  // ================= schema compare =================
+
+  /** Structure snapshot of a database: tables -> {columns, indexes}. */
+  async schemaSnapshot(connId, db) {
+    const tables = (await this.listObjects(connId, db)).tables;
+    const out = {};
+    for (const t of tables) {
+      const cols = await this.tableColumns(connId, db, t.name);
+      const ixs = await this.tableIndexes(connId, db, t.name);
+      out[t.name] = {
+        columns: Object.fromEntries(cols.map(c => [c.name, {
+          type: String(c.type || '').toUpperCase(), nullable: !!c.nullable,
+          def: c.default === undefined ? null : c.default, extra: c.extra || '',
+        }])),
+        indexes: ixs.filter(ix => ix.name !== 'PRIMARY').map(ix => ({ name: ix.name, unique: ix.unique, columns: ix.columns })),
+      };
+    }
+    return out;
+  }
+
+  /** Diff snapshot A vs B -> { onlyA, onlyB, changed: [{table, details}] } */
+  static diffSchema(a, b) {
+    const onlyA = Object.keys(a).filter(t => !b[t]);
+    const onlyB = Object.keys(b).filter(t => !a[t]);
+    const changed = [];
+    for (const t of Object.keys(a).filter(t => b[t])) {
+      const details = [];
+      const A = a[t], B = b[t];
+      for (const c of Object.keys(A.columns)) {
+        if (!B.columns[c]) details.push({ kind: 'col-add', text: `ADD COLUMN ${c} ${A.columns[c].type}` });
+        else {
+          const x = A.columns[c], y = B.columns[c];
+          if (x.type !== y.type || x.nullable !== y.nullable || String(x.def) !== String(y.def) || x.extra !== y.extra) {
+            details.push({ kind: 'col-mod', text: `MODIFY COLUMN ${c}  (${y.type}${y.nullable ? '' : ' NOT NULL'}) → (${x.type}${x.nullable ? '' : ' NOT NULL'})` });
+          }
+        }
+      }
+      for (const c of Object.keys(B.columns)) if (!A.columns[c]) details.push({ kind: 'col-drop', text: `DROP COLUMN ${c}` });
+      for (const ix of A.indexes) {
+        const match = B.indexes.find(x => x.name === ix.name);
+        if (!match) details.push({ kind: 'ix-add', text: `ADD ${ix.unique ? 'UNIQUE ' : ''}INDEX ${ix.name} (${ix.columns.join(', ')})` });
+        else if (JSON.stringify(ix.columns) !== JSON.stringify(match.columns) || ix.unique !== match.unique) {
+          details.push({ kind: 'ix-mod', text: `MODIFY INDEX ${ix.name}` });
+        }
+      }
+      for (const ix of B.indexes) if (!A.indexes.find(x => x.name === ix.name)) details.push({ kind: 'ix-drop', text: `DROP INDEX ${ix.name}` });
+      if (details.length) changed.push({ table: t, details });
+    }
+    return { onlyA, onlyB, changed };
+  }
+
+  /** Generate ALTER/CREATE/DROP statements to make `dbB` look like snapshot of A. */
+  async buildMigrationSql(connIdA, dbA, connIdB, dbB, { includeDrops = false } = {}) {
+    const [a, b] = [await this.schemaSnapshot(connIdA, dbA), await this.schemaSnapshot(connIdB, dbB)];
+    const d = DBManager.diffSchema(a, b);
+    const lines = ['-- Schema migration: ' + dbB + ' ← ' + dbA, '-- Generated: ' + new Date().toISOString(), ''];
+    for (const t of d.onlyA) {
+      const ddl = await this.tableDDL(connIdA, dbA, t);
+      lines.push('-- table missing in target', ddl + ';', '');
+    }
+    for (const { table, details } of d.changed) {
+      lines.push('-- table ' + table);
+      const stmts = [];
+      for (const dt of details) {
+        if (dt.kind === 'col-add') {
+          const col = (await this.tableColumns(connIdA, dbA, table)).find(x => x.name === dt.text.split(' ')[2]);
+          if (col) stmts.push(`ALTER TABLE ${DBManager.escId(table)} ADD COLUMN ${DBManager.escId(col.name)} ${col.type}${col.nullable ? '' : ' NOT NULL'}${col.default != null && col.default !== '' ? ' DEFAULT ' + DBManager.escValue(col.default) : ''}`);
+        } else if (dt.kind === 'col-mod') {
+          const col = (await this.tableColumns(connIdA, dbA, table)).find(x => x.name === dt.text.split(' ')[2]);
+          if (col) stmts.push(`ALTER TABLE ${DBManager.escId(table)} MODIFY COLUMN ${DBManager.escId(col.name)} ${col.type}${col.nullable ? '' : ' NOT NULL'}`);
+        } else if (dt.kind === 'col-drop' && includeDrops) {
+          stmts.push(`ALTER TABLE ${DBManager.escId(table)} DROP COLUMN ${DBManager.escId(dt.text.split(' ')[2])}`);
+        } else if (dt.kind === 'ix-add') {
+          stmts.push(`ALTER TABLE ${DBManager.escId(table)} ADD ${dt.text.replace(/^(ADD )?/, '')}`);
+        } else if (dt.kind === 'ix-drop' && includeDrops) {
+          stmts.push(`ALTER TABLE ${DBManager.escId(table)} DROP INDEX ${DBManager.escId(dt.text.split(' ')[2])}`);
+        }
+      }
+      lines.push(...stmts, '');
+    }
+    if (includeDrops) for (const t of d.onlyB) lines.push('-- table only in target (review!)', 'DROP TABLE ' + DBManager.escId(t) + ';', '');
+    return { sql: lines.join('\n'), onlyA: d.onlyA, onlyB: d.onlyB, changed: d.changed };
   }
 
   // ================= data transfer =================

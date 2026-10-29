@@ -386,6 +386,10 @@ function buildEditorView(tab, view, connId, db) {
 
   async function executeSql(sql, label) {
     if (running) return;
+    if (state.settings.confirmDestructive && /^\s*(UPDATE|DELETE)\b/i.test(sql) && !/\bWHERE\b/i.test(sql)) {
+      const go = await import('./utils.js').then(u => u.confirmBox(t('ed.nowhere.title'), t('ed.nowhere.body'), true));
+      if (!go) return;
+    }
     running = true;
     lastSQL = sql;
     runBtn.disabled = true;

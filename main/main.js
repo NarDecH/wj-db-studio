@@ -188,6 +188,8 @@ function registerIpc() {
   ipcMain.handle('io:importXlsx', (_e, args) => dbm.importXlsx(args.connId, args));
   ipcMain.handle('db:findInDatabase', (_e, args) => dbm.findInDatabase(args.connId, args));
   ipcMain.handle('db:transferTable', (_e, args) => dbm.transferTable(args));
+  ipcMain.handle('db:schemaSnapshot', (_e, id, db) => dbm.schemaSnapshot(id, db));
+  ipcMain.handle('db:buildMigrationSql', (_e, args) => dbm.buildMigrationSql(args.connIdA, args.dbA, args.connIdB, args.dbB, args));
   ipcMain.handle('io:runSqlFile', (_e, args) => dbm.runSqlFile(args.connId, args));
   ipcMain.handle('io:backup', (_e, args) => dbm.backup(args.connId, args));
 

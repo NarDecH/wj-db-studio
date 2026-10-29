@@ -97,6 +97,7 @@ class Store {
       port: parseInt(conn.port, 10) || 3306,
       user: String(conn.user || 'root').slice(0, 100),
       ssl: !!conn.ssl,
+      sslVerify: !!conn.sslVerify,
       sslCa: conn.sslCa ? String(conn.sslCa) : '',
       readOnly: !!conn.readOnly,
       ssh: {
