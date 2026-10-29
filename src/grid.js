@@ -47,6 +47,7 @@ export class DataGrid {
     for (const f of this.fields) {
       const th = el('th', { text: f.name }, this.sortCol === f.name ? el('span', { class: 'sort', text: this.sortDir === 'asc' ? '▲' : '▼' }) : null);
       th.addEventListener('click', () => {
+        if (th._dragged) { th._dragged = false; return; }
         if (this.sortCol === f.name) this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
         else { this.sortCol = f.name; this.sortDir = 'asc'; }
         if (this.opts.onSort) this.opts.onSort(this.sortCol, this.sortDir);
@@ -60,6 +61,28 @@ export class DataGrid {
           this.render();
         }
       });
+      // apply saved column widths
+      if (this.opts.colWidths && this.opts.colWidths[f.name]) th.style.width = this.opts.colWidths[f.name] + 'px';
+      // resizable columns (drag right edge)
+      const rz = el('span', { class: 'th-resizer', title: '↔' });
+      rz.addEventListener('mousedown', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const startX = e.clientX, startW = th.offsetWidth;
+        const move = (e2) => {
+          const w = Math.max(40, startW + e2.clientX - startX);
+          th.style.width = w + 'px';
+          th._dragged = true;
+        };
+        const up = () => {
+          document.removeEventListener('mousemove', move);
+          document.removeEventListener('mouseup', up);
+          setTimeout(() => { th._dragged = false; }, 0);
+          this.opts.onColWidth && this.opts.onColWidth(f.name, th.offsetWidth);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', up);
+      });
+      th.append(rz);
       trh.append(th);
     }
     thead.append(trh);
@@ -192,6 +215,7 @@ export function openTableData({ connId, db, table, isView = false }) {
     app.openTab({
       type: 'data', key: `data:${connId}:${db}:${table}`,
       title: `${db}.${table}`, icon: isView ? 'view' : 'table',
+      payload: { connId, db, table, isView },
       render: (tab, view) => buildDataView(tab, view, connId, db, table, isView),
     });
   });
@@ -259,6 +283,13 @@ async function buildDataView(tab, view, connId, db, table, isView) {
 
   const grid = new DataGrid(gridWrap, {
     onSort: (col, dir) => { orderBy = col; orderDir = dir; load(); },
+    colWidths: (state.settings.gridWidths || {})[`${db}.${table}`] || {},
+    onColWidth: (colName, w) => {
+      const key = `${db}.${table}`;
+      const gw = { ...(state.settings.gridWidths || {}) };
+      gw[key] = { ...(gw[key] || {}), [colName]: w };
+      import('./state.js').then(m => m.saveSettings({ gridWidths: gw }));
+    },
     onCellDblClick: (rowIdx, colName, value, td) => {
       const col = cols.find(c => c.name === colName);
       const isBin = value instanceof Uint8Array || (value && value.type === 'Buffer');
@@ -271,6 +302,16 @@ async function buildDataView(tab, view, connId, db, table, isView) {
   });
 
   tab.onRefresh = load;
+
+  // Ctrl+F focuses the filter box
+  const kf = (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F') && view.classList.contains('active')) {
+      e.preventDefault(); filterInput.focus();
+    }
+  };
+  window.addEventListener('keydown', kf);
+  const oldClose = tab.onClose;
+  tab.onClose = () => { window.removeEventListener('keydown', kf); if (oldClose) oldClose(); };
 
   async function init() {
     try {

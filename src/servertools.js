@@ -41,6 +41,44 @@ async function buildServerView(tab, view, connId) {
     );
     root.append(cards);
 
+    // live QPS / connections sparkline (samples every 2s while tab is open)
+    const cv = el('canvas', { width: 560, height: 110, style: { width: '280px', height: '55px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '10px' } });
+    const legend = el('div', { class: 'muted', style: { fontSize: '10.5px' }, text: t('srv.qps') });
+    root.append(el('div', { style: { display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '16px' } }, cv, legend));
+    const series = [];
+    let prevQ = inf.questions || 0, prevT = Date.now();
+    clearInterval(tab._srvTimer);
+    tab._srvTimer = setInterval(async () => {
+      try {
+        const s = await window.wjds.variables(connId, 'status', '');
+        const q = Number(s.find(x => x.name === 'Questions')?.value || 0);
+        const th = Number(s.find(x => x.name === 'Threads_connected')?.value || 0);
+        const now = Date.now();
+        const qps = Math.max(0, (q - prevQ) / Math.max(0.5, (now - prevT) / 1000));
+        prevQ = q; prevT = now;
+        series.push({ qps, th });
+        if (series.length > 80) series.shift();
+        const ctx = cv.getContext('2d');
+        const W = cv.width, H = cv.height;
+        ctx.clearRect(0, 0, W, H);
+        const maxQ = Math.max(1, ...series.map(p => p.qps));
+        const maxT = Math.max(1, ...series.map(p => p.th));
+        const line = (key, max, color) => {
+          ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+          series.forEach((p, i) => {
+            const x = (i / 79) * (W - 8) + 4;
+            const y = H - 6 - (p[key] / max) * (H - 14);
+            i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+          });
+          ctx.stroke();
+        };
+        line('qps', maxQ, '#4f8cff');
+        line('th', maxT, '#3fb27f');
+        legend.textContent = `${t('srv.qps')}: ${qps.toFixed(1)} · ${t('srv.threads')}: ${th}`;
+      } catch { /* ignore sampling errors */ }
+    }, 2000);
+    tab.onClose = () => clearInterval(tab._srvTimer);
+
     // buttons to other tools
     root.append(el('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' } },
       el('button', { class: 'btn', onclick: () => openProcessList() }, ic('monitor'), el('span', { text: t('srv.processlist') })),

@@ -189,6 +189,10 @@ class Store {
   // ---- misc ----
   setTourDone() { this.data.tourDone = true; this.save(); }
 
+  // ---- session (restorable tabs) ----
+  getSession() { return this.data.session || { tabs: [] }; }
+  saveSession(session) { this.data.session = { tabs: (session.tabs || []).slice(0, 30) }; this.save(); }
+
   _encrypt(plain) {
     try {
       if (!safeStorage || !safeStorage.isEncryptionAvailable()) return '';

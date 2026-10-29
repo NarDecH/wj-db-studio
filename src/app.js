@@ -55,6 +55,7 @@ export function openTab(def) {
   tabs.set(id, tab);
   activateTab(id);
   def.render && def.render(tab, viewEl);
+  scheduleSaveSession();
   return tab;
 }
 
@@ -76,6 +77,7 @@ export function closeTab(id) {
   tab.viewEl.remove();
   tab.btn.remove();
   tabs.delete(id);
+  scheduleSaveSession();
   if (activeTabId === id) {
     const last = [...tabs.keys()].pop();
     if (last) activateTab(last);
@@ -84,6 +86,49 @@ export function closeTab(id) {
 }
 
 export function activeTab() { return tabs.get(activeTabId) || null; }
+
+/* ==================== session restore ==================== */
+const saveSessionDebounced = debounce(() => {
+  const list = [];
+  for (const [, t2] of tabs) {
+    if (t2.type === 'query') list.push({ type: 'query', title: t2.title, sql: (t2.payload.getSQL ? t2.payload.getSQL() : '') });
+    else if (t2.type === 'data') list.push({ type: 'data', connId: t2.payload.connId, db: t2.payload.db, table: t2.payload.table, isView: !!t2.payload.isView });
+    else if (['server', 'users', 'procs', 'vars'].includes(t2.type)) list.push({ type: t2.type, connId: t2.payload.connId });
+  }
+  window.wjds.saveSession({ tabs: list }).catch(() => {});
+}, 900);
+function scheduleSaveSession() { saveSessionDebounced(); }
+
+async function restoreSession() {
+  try {
+    const sess = await window.wjds.getSession();
+    const saved = sess.tabs || [];
+    if (!saved.length) return;
+    // auto-reconnect the most recent connection in the session
+    const withConn = saved.find(x => x.connId);
+    if (withConn && connMeta(withConn.connId)) {
+      const res = await window.wjds.dbConnect(withConn.connId);
+      if (res.ok) {
+        state.active.set(withConn.connId, { meta: connMeta(withConn.connId), info: res.info });
+        state.currentConnId = withConn.connId;
+        setStatusConn(t('st.ready') + ' · ' + connMeta(withConn.connId).name, 'on');
+        setStatusServer(res.info);
+      }
+    }
+    for (const s of saved.slice(0, 12)) {
+      try {
+        if (s.type === 'query') {
+          const tab = openEditor({ connId: s.connId || state.currentConnId, db: s.db });
+          if (tab && s.sql) setTimeout(() => { tab.payload.setSQL(s.sql); }, 300);
+        } else if (s.type === 'data' && s.connId) {
+          openTableData({ connId: s.connId, db: s.db, table: s.table, isView: s.isView });
+        } else if (s.type === 'server' && s.connId) openServerDashboard();
+        else if (s.type === 'users' && s.connId) openUsers();
+      } catch { /* skip bad entries */ }
+    }
+    if (saved.some(x => x.type !== 'home')) logMessage(`↺ ${t('menu.sessionrestored') || ''} (${saved.length})`.trim());
+  } catch { /* ignore */ }
+}
 
 export function openHome() {
   const tab = openTab({
@@ -336,8 +381,10 @@ async function boot() {
   $('#st-version').textContent = 'WJ DB Studio v' + version;
 
   // First run: welcome tour (automatic help)
-  if (!state.settings.tourDone !== false && state.settings.tourDone === false) {
+  if (state.settings.tourDone === false) {
     import('./help.js').then(m => m.showTour());
+  } else {
+    restoreSession(); // reopen last tabs + connection
   }
 
   logMessage('WJ DB Studio v' + version + ' — © 2026 Weeradech Jessadarom');

@@ -36,7 +36,9 @@ const api = {
   listSnippets: invoke('store:snippets:list'),
   saveSnippet: (s) => invoke('store:snippets:save')(s),
   deleteSnippet: (id) => invoke('store:snippets:delete')(id),
-  setTourDone: invoke('store:tourDone'),
+   setTourDone: invoke('store:tourDone'),
+  getSession: invoke('store:session:get'),
+  saveSession: (s) => invoke('store:session:save')(s),
 
   // sql log
   sqllogRead: (limit) => invoke('sqllog:read')(limit),

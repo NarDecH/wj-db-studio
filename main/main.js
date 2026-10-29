@@ -137,6 +137,8 @@ function registerIpc() {
   ipcMain.handle('store:snippets:save', (_e, s) => store.saveSnippet(s));
   ipcMain.handle('store:snippets:delete', (_e, id) => store.deleteSnippet(id));
   ipcMain.handle('store:tourDone', () => store.setTourDone());
+  ipcMain.handle('store:session:get', () => store.getSession());
+  ipcMain.handle('store:session:save', (_e, s) => store.saveSession(s || {}));
 
   // ---- sql log ----
   ipcMain.handle('sqllog:read', (_e, limit) => sqllog.read(limit || 400));

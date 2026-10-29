@@ -78,7 +78,7 @@ export const I18N = {
     'srv.dbsize': 'Total size of databases', 'srv.processlist': 'Process List', 'srv.kill': 'Kill',
     'srv.killquery': 'Kill Query', 'srv.vars': 'Variables', 'srv.status': 'Status',
     'srv.search': 'Search…', 'srv.confirmKill': 'Kill process {id}?',
-    'srv.autorefresh': 'Auto refresh (5s)', 'srv.dbprivs': 'Database privileges',
+    'srv.autorefresh': 'Auto refresh (5s)', 'srv.dbprivs': 'Database privileges', 'srv.qps': 'Queries/sec (blue) · Connections (green)',
 
     'usr.title': 'Users & Privileges', 'usr.new': 'Create User', 'usr.name': 'User', 'usr.host': 'Host',
     'usr.password': 'Password', 'usr.grants': 'Grants', 'usr.drop': 'Drop User', 'usr.setpass': 'Set Password',
@@ -116,7 +116,7 @@ export const I18N = {
     'msg.copied': 'Copied', 'msg.connected': 'Connected to {name}', 'msg.disconnected': 'Disconnected',
     'msg.needconn': 'Connect to a server first', 'msg.savedfile': 'Saved: {f}',
     'msg.error': 'Error', 'msg.running': 'Working…',
-    'menu.closeTab': 'Close tab',
+    'menu.closeTab': 'Close tab', 'menu.sessionrestored': 'Previous session restored',
   },
 
   th: {
@@ -194,7 +194,7 @@ export const I18N = {
     'srv.dbsize': 'ขนาดฐานข้อมูลรวม', 'srv.processlist': 'Process List', 'srv.kill': 'Kill',
     'srv.killquery': 'Kill Query', 'srv.vars': 'ตัวแปรระบบ', 'srv.status': 'สถานะ',
     'srv.search': 'ค้นหา…', 'srv.confirmKill': 'Kill process {id}?',
-    'srv.autorefresh': 'รีเฟรชอัตโนมัติ (5 วิ)', 'srv.dbprivs': 'สิทธิ์ระดับฐานข้อมูล',
+    'srv.autorefresh': 'รีเฟรชอัตโนมัติ (5 วิ)', 'srv.dbprivs': 'สิทธิ์ระดับฐานข้อมูล', 'srv.qps': 'คิวรี/วินาที (ฟ้า) · การเชื่อมต่อ (เขียว)',
 
     'usr.title': 'ผู้ใช้และสิทธิ์', 'usr.new': 'สร้างผู้ใช้', 'usr.name': 'ผู้ใช้', 'usr.host': 'โฮสต์',
     'usr.password': 'รหัสผ่าน', 'usr.grants': 'สิทธิ์', 'usr.drop': 'ลบผู้ใช้', 'usr.setpass': 'ตั้งรหัสผ่าน',
@@ -232,7 +232,7 @@ export const I18N = {
     'msg.copied': 'คัดลอกแล้ว', 'msg.connected': 'เชื่อมต่อ {name} แล้ว', 'msg.disconnected': 'ตัดการเชื่อมต่อแล้ว',
     'msg.needconn': 'กรุณาเชื่อมต่อเซิร์ฟเวอร์ก่อน', 'msg.savedfile': 'บันทึกที่: {f}',
     'msg.error': 'ข้อผิดพลาด', 'msg.running': 'กำลังทำงาน…',
-    'menu.closeTab': 'ปิดแท็บ',
+    'menu.closeTab': 'ปิดแท็บ', 'menu.sessionrestored': 'กู้คืนหน้าจอครั้งก่อนแล้ว',
   },
 };
 
