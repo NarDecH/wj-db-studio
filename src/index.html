@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'">
+  <title>WJ DB Studio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- ===== Toolbar ===== -->
+  <header id="toolbar" role="toolbar">
+    <div class="tb-group">
+      <button id="tb-home" class="tb-btn" data-tip="Home dashboard / แดชบอร์ดหลัก" title=""><span class="tb-ic" data-icon="home"></span><span data-i18n="tb.home">Home</span></button>
+      <span class="tb-sep"></span>
+      <button id="tb-newconn" class="tb-btn" data-tip="New connection / เชื่อมต่อใหม่"><span class="tb-ic" data-icon="plug"></span><span data-i18n="tb.newconn">Connect</span></button>
+      <button id="tb-newquery" class="tb-btn" data-tip="New SQL query tab / แท็บ SQL ใหม่"><span class="tb-ic" data-icon="code"></span><span data-i18n="tb.newquery">New Query</span></button>
+      <span class="tb-sep"></span>
+      <button id="tb-import" class="tb-btn" data-tip="Import data / นำเข้าข้อมูล"><span class="tb-ic" data-icon="import"></span><span data-i18n="tb.import">Import</span></button>
+      <button id="tb-export" class="tb-btn" data-tip="Export results / ส่งออก"><span class="tb-ic" data-icon="export"></span><span data-i18n="tb.export">Export</span></button>
+      <button id="tb-backup" class="tb-btn" data-tip="Backup database / สำรองข้อมูล"><span class="tb-ic" data-icon="backup"></span><span data-i18n="tb.backup">Backup</span></button>
+      <span class="tb-sep"></span>
+      <button id="tb-server" class="tb-btn" data-tip="Server dashboard / แดชบอร์ดเซิร์ฟเวอร์"><span class="tb-ic" data-icon="server"></span><span data-i18n="tb.server">Server</span></button>
+      <button id="tb-users" class="tb-btn" data-tip="Users &amp; privileges / ผู้ใช้และสิทธิ์"><span class="tb-ic" data-icon="user"></span><span data-i18n="tb.users">Users</span></button>
+    </div>
+    <div class="tb-group tb-right">
+      <button id="tb-help" class="tb-btn tb-icon-only" data-tip="Help (F1) / ช่วยเหลือ"><span class="tb-ic" data-icon="help"></span></button>
+      <button id="tb-settings" class="tb-btn tb-icon-only" data-tip="Settings / ตั้งค่า"><span class="tb-ic" data-icon="gear"></span></button>
+    </div>
+  </header>
+
+  <!-- ===== Main area ===== -->
+  <div id="main">
+    <!-- Sidebar: object explorer -->
+    <aside id="sidebar">
+      <div class="side-head">
+        <div class="side-title"><span class="side-ic" data-icon="database"></span><span data-i18n="side.explorer">Object Explorer</span></div>
+        <div class="side-actions">
+          <button id="tree-refresh" class="mini-btn" data-tip="Refresh (F5) / รีเฟรช"><span data-icon="refresh"></span></button>
+          <button id="conn-add" class="mini-btn" data-tip="Add connection / เพิ่มการเชื่อมต่อ"><span data-icon="plus"></span></button>
+        </div>
+      </div>
+      <div class="side-filter">
+        <span class="filter-ic" data-icon="search"></span>
+        <input id="tree-filter" type="text" data-i18n-ph="side.filter" placeholder="Filter…">
+      </div>
+      <div id="tree" class="tree"></div>
+    </aside>
+
+    <div id="splitter" title=""></div>
+
+    <!-- Workarea -->
+    <section id="workarea">
+      <div id="tabbar" role="tablist"></div>
+      <div id="views"></div>
+      <div id="bottompanel">
+        <div id="bp-tabs">
+          <button class="bp-tab active" data-bp="messages"><span data-icon="info"></span><span data-i18n="bp.messages">Messages</span></button>
+          <button class="bp-tab" data-bp="history"><span data-icon="history"></span><span data-i18n="bp.history">History</span></button>
+          <button class="bp-tab" data-bp="snippets"><span data-icon="bookmark"></span><span data-i18n="bp.snippets">Snippets</span></button>
+          <span class="bp-spacer"></span>
+          <button id="bp-toggle" class="mini-btn" data-tip="Show/hide panel / ซ่อน-แสดงแผง"><span data-icon="chevron-down"></span></button>
+        </div>
+        <div id="bp-body">
+          <div id="bp-messages" class="bp-pane active"></div>
+          <div id="bp-history" class="bp-pane">
+            <div class="pane-tools"><button id="history-clear" class="mini-btn"><span data-icon="trash"></span><span data-i18n="bp.clear">Clear</span></button></div>
+            <div id="history-list" class="bp-list"></div>
+          </div>
+          <div id="bp-snippets" class="bp-pane">
+            <div class="pane-tools"><button id="snippet-add" class="mini-btn"><span data-icon="plus"></span><span data-i18n="bp.newsnippet">New snippet</span></button></div>
+            <div id="snippet-list" class="bp-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== Status bar ===== -->
+  <footer id="statusbar">
+    <span id="st-conn" class="st-item"><span class="st-dot off"></span><span data-i18n="st.notconnected">Not connected</span></span>
+    <span class="st-sep"></span>
+    <span id="st-server" class="st-item"></span>
+    <span class="st-flex"></span>
+    <span id="st-db" class="st-item"></span>
+    <span class="st-sep"></span>
+    <span id="st-time" class="st-item"></span>
+    <span class="st-sep"></span>
+    <span id="st-version" class="st-item muted"></span>
+  </footer>
+
+  <!-- Overlays -->
+  <div id="modal-root"></div>
+  <div id="ctx-root"></div>
+  <div id="toasts"></div>
+  <div id="help-panel" hidden>
+    <div class="hp-head">
+      <span class="hp-title"><span data-icon="help"></span><span data-i18n="help.title">Help</span></span>
+      <button id="hp-close" class="mini-btn"><span data-icon="x"></span></button>
+    </div>
+    <input id="hp-search" type="text" data-i18n-ph="help.search" placeholder="Search help…">
+    <div id="hp-content"></div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

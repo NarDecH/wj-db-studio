@@ -1,0 +1,78 @@
+{
+  "name": "wj-db-studio",
+  "productName": "WJ DB Studio",
+  "version": "1.0.0",
+  "description": "WJ DB Studio — a fast, modern, zero-setup database manager for MySQL and MariaDB",
+  "author": "Weeradech Jessadarom",
+  "license": "MIT",
+  "homepage": "https://github.com/weeradech/wj-db-studio#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/weeradech/wj-db-studio.git"
+  },
+  "main": "main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "selftest": "electron . --selftest",
+    "dist": "electron-builder --win nsis portable",
+    "dist:portable": "electron-builder --win portable",
+    "dist:linux": "electron-builder --linux AppImage",
+    "dist:mac": "electron-builder --mac dmg",
+    "dist:all": "electron-builder -mwl"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9",
+    "mysql2": "^3.15.3",
+    "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.weeradech.wjdbstudio",
+    "productName": "WJ DB Studio",
+    "asar": true,
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "main/**/*",
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "WJ DB Studio"
+    },
+    "portable": {
+      "artifactName": "WJ-DB-Studio-${version}-Portable.exe"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "build/icon.png",
+      "category": "Development"
+    },
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "icon": "build/icon.png",
+      "category": "public.app-category.developer-tools"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "weeradech",
+      "repo": "wj-db-studio"
+    }
+  }
+}

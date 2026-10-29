@@ -1,0 +1,18 @@
+# Node / build
+node_modules/
+dist/
+out/
+*.log
+npm-debug.log*
+
+# Electron
+app-update.yml
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local tooling (kept out of the repo)
+tools/
+_downloads/
