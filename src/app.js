@@ -203,6 +203,7 @@ function initToolbar() {
   $('#tb-import').addEventListener('click', () => importDialog());
   $('#tb-export').addEventListener('click', () => exportActive());
   $('#tb-backup').addEventListener('click', () => backupDialog());
+  $('#tb-find').addEventListener('click', () => import('./finddb.js').then(m => m.findDialog()));
   $('#tb-server').addEventListener('click', () => openServerDashboard());
   $('#tb-users').addEventListener('click', () => openUsers());
   $('#tb-help').addEventListener('click', () => toggleHelp());

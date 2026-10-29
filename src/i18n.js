@@ -5,7 +5,9 @@
 export const I18N = {
   en: {
     'tb.home': 'Home', 'tb.newconn': 'Connect', 'tb.newquery': 'New Query', 'tb.import': 'Import',
-    'tb.export': 'Export', 'tb.backup': 'Backup', 'tb.server': 'Server', 'tb.users': 'Users',
+    'tb.export': 'Export', 'tb.backup': 'Backup', 'tb.server': 'Server', 'tb.users': 'Users', 'tb.find': 'Find',
+    'find.title': 'Find in database — search a value across all tables',
+    'find.term': 'Value to search', 'find.run': 'Search', 'find.none': 'No matches found in any table.',
     'side.explorer': 'Object Explorer', 'side.filter': 'Filter objects…',
     'bp.messages': 'Messages', 'bp.history': 'History', 'bp.snippets': 'Snippets', 'bp.clear': 'Clear',
     'bp.newsnippet': 'New snippet', 'bp.sqllog': 'SQL Log',
@@ -61,6 +63,7 @@ export const I18N = {
 
     'imp.title': 'Import Data', 'imp.file': 'File', 'imp.browse': 'Browse…', 'imp.target': 'Target table',
     'imp.delim': 'Delimiter', 'imp.headers': 'First row contains headers', 'imp.truncate': 'Truncate table before import',
+    'imp.createtable': 'Create table automatically from this file (auto column types)',
     'imp.run': 'Import', 'imp.done': 'Imported {n} row(s)', 'imp.json': 'JSON array file',
 
     'exp.title': 'Export', 'exp.format': 'Format', 'exp.run': 'Export', 'exp.done': 'Exported {n} row(s) to {f}',
@@ -118,7 +121,9 @@ export const I18N = {
 
   th: {
     'tb.home': 'หน้าแรก', 'tb.newconn': 'เชื่อมต่อ', 'tb.newquery': 'SQL ใหม่', 'tb.import': 'นำเข้า',
-    'tb.export': 'ส่งออก', 'tb.backup': 'สำรอง', 'tb.server': 'เซิร์ฟเวอร์', 'tb.users': 'ผู้ใช้',
+    'tb.export': 'ส่งออก', 'tb.backup': 'สำรอง', 'tb.server': 'เซิร์ฟเวอร์', 'tb.users': 'ผู้ใช้', 'tb.find': 'ค้นหา',
+    'find.title': 'ค้นหาค่าในฐานข้อมูล — ค้นทุกตารางพร้อมกัน',
+    'find.term': 'ค่าที่ต้องการค้นหา', 'find.run': 'ค้นหา', 'find.none': 'ไม่พบข้อมูลในตารางใดเลย',
     'side.explorer': 'สำรวจออบเจกต์', 'side.filter': 'ค้นหาออบเจกต์…',
     'bp.messages': 'ข้อความ', 'bp.history': 'ประวัติ', 'bp.snippets': 'ตัวอย่าง SQL', 'bp.clear': 'ล้าง',
     'bp.newsnippet': 'สร้างตัวอย่าง', 'bp.sqllog': 'SQL Log',
@@ -174,6 +179,7 @@ export const I18N = {
 
     'imp.title': 'นำเข้าข้อมูล', 'imp.file': 'ไฟล์', 'imp.browse': 'เลือกไฟล์…', 'imp.target': 'ตารางปลายทาง',
     'imp.delim': 'ตัวคั่น', 'imp.headers': 'แถวแรกเป็นชื่อคอลัมน์', 'imp.truncate': 'ล้างตารางก่อนนำเข้า',
+    'imp.createtable': 'สร้างตารางใหม่จากไฟล์นี้อัตโนมัติ (เดาชนิดคอลัมน์ให้)',
     'imp.run': 'นำเข้า', 'imp.done': 'นำเข้าแล้ว {n} แถว', 'imp.json': 'ไฟล์ JSON แบบ array',
 
     'exp.title': 'ส่งออก', 'exp.format': 'รูปแบบ', 'exp.run': 'ส่งออก', 'exp.done': 'ส่งออก {n} แถว ไปที่ {f}',

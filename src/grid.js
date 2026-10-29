@@ -22,6 +22,9 @@ export class DataGrid {
     this.rows = [];
     this.sortCol = null;
     this.sortDir = 'asc';
+    this.selectedRows = new Set();  // multi-row selection (indices)
+    this._anchor = null;
+    this._trs = [];
     this.el = el('div', { class: 'res-grid-wrap' });
     container.append(this.el);
   }
@@ -63,6 +66,7 @@ export class DataGrid {
     table.append(thead);
 
     const tbody = el('tbody');
+    this._trs = [];
     this.rows.forEach((row, i) => {
       const tr = el('tr', {}, el('td', { class: 'rownum', text: String(i + 1) }));
       for (const f of this.fields) {
@@ -86,15 +90,33 @@ export class DataGrid {
         });
         tr.append(td);
       }
-      tr.addEventListener('mousedown', () => {
-        this.el.querySelectorAll('tr.selected').forEach(x => x.classList.remove('selected'));
-        tr.classList.add('selected');
+      tr.addEventListener('mousedown', (e) => {
+        // multi-select: Ctrl toggles, Shift extends range, plain click resets
+        if (e.ctrlKey || e.metaKey) {
+          this.selectedRows.has(i) ? this.selectedRows.delete(i) : this.selectedRows.add(i);
+          this._anchor = i;
+        } else if (e.shiftKey && this._anchor != null) {
+          this.selectedRows.clear();
+          const [a, b] = [Math.min(this._anchor, i), Math.max(this._anchor, i)];
+          for (let k = a; k <= b; k++) this.selectedRows.add(k);
+        } else {
+          this.selectedRows.clear();
+          this.selectedRows.add(i);
+          this._anchor = i;
+        }
         this.selectedRow = i;
+        this.paintSelection();
       });
+      this._trs.push(tr);
       tbody.append(tr);
     });
     table.append(tbody);
     this.el.append(table);
+    this.paintSelection();
+  }
+
+  paintSelection() {
+    this._trs.forEach((tr, i) => tr.classList.toggle('selected', this.selectedRows.has(i)));
   }
 
   fmt(v) {
@@ -293,23 +315,40 @@ async function buildDataView(tab, view, connId, db, table, isView) {
   function startCellEdit(rowIdx, colName, value, td) {
     if (isView) return;
     const col = cols.find(c => c.name === colName);
-    const input = el('input', { class: 'cell-edit' });
-    input.value = value === null ? '' : String(value);
+    const typeUp = (col?.type || '').toUpperCase();
+    let editor;
+    const enumM = typeUp.match(/^ENUM\((.*)\)$/s);
+    if (enumM) {
+      // ENUM dropdown (nullable tables get an empty -> NULL option)
+      editor = el('select', { class: 'cell-edit' });
+      const opts = (enumM[1].match(/'((?:[^'\\]|\\.)*)'/g) || []).map(s => s.slice(1, -1).replace(/\\'/g, "'"));
+      if (col?.nullable !== false) editor.append(el('option', { value: '', text: '— NULL —' }));
+      for (const o of opts) editor.append(el('option', { value: o, text: o, selected: String(value) === o }));
+    } else if (typeUp === 'DATE') {
+      editor = el('input', { type: 'date', class: 'cell-edit' });
+      editor.value = value ? String(value).slice(0, 10) : '';
+    } else if (/^(DATETIME|TIMESTAMP)$/.test(typeUp)) {
+      editor = el('input', { type: 'datetime-local', class: 'cell-edit' });
+      editor.value = value ? String(value).replace(' ', 'T').slice(0, 16) : '';
+    } else {
+      editor = el('input', { class: 'cell-edit' });
+      editor.value = value === null ? '' : String(value);
+    }
     td.innerHTML = '';
-    td.append(input);
+    td.append(editor);
     td.classList.remove('null');
-    input.focus();
-    input.setSelectionRange(input.value.length, input.value.length);
+    editor.focus();
+    if (editor.select) editor.setSelectionRange(editor.value.length, editor.value.length);
 
     const commit = () => {
-      const raw = input.value;
+      let raw = editor.value;
+      if (/^(DATETIME|TIMESTAMP)$/.test(typeUp) && raw) raw = raw.replace('T', ' ');
       const newVal = raw === '' ? null : coerce(raw, col);
       const oldVal = value;
       const row = rows[rowIdx];
       if (String(newVal) !== String(oldVal) || (newVal === null) !== (oldVal === null)) {
         const keys = rowKeys(row);
         if (!keys) { toast(t('grid.nopk'), 'err'); return; }
-        // find existing update for the same row
         let u = updates.find(x => sameKeys(x.keys, keys));
         if (!u) { u = { keys, values: {} }; updates.push(u); }
         u.values[colName] = newVal;
@@ -318,11 +357,11 @@ async function buildDataView(tab, view, connId, db, table, isView) {
       }
       renderGrid();
     };
-    input.addEventListener('keydown', (e) => {
+    editor.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); commit(); }
       else if (e.key === 'Escape') { renderGrid(); }
     });
-    input.addEventListener('blur', commit);
+    editor.addEventListener('blur', commit);
   }
 
   function coerce(raw, col) {
@@ -352,11 +391,25 @@ async function buildDataView(tab, view, connId, db, table, isView) {
 
   function rowMenu(e, rowIdx, row) {
     const keys = rowKeys(row);
+    const sel = [...grid.selectedRows].filter(k => k < rows.length);
+    const many = sel.length > 1;
+    const rowsToCopy = many ? sel.map(k => rows[k]) : [row];
     showContextMenu(e.clientX, e.clientY, [
-      { label: t('grid.delrow'), icon: 'trash', danger: true, action: () => { if (keys) { deletes.push({ keys }); renderGrid(); } else toast(t('grid.nopk'), 'err'); } },
-      { label: t('grid.null') + ' → ' + (grid.fields[1]?.name || ''), icon: 'dot', action: () => {} },
-      { label: 'Copy row (JSON)', icon: 'copy', action: () => copyText(JSON.stringify(row, null, 2)) },
-      { label: 'Copy as INSERT', icon: 'sql', action: () => copyText(buildInsert(row)) },
+      { label: `${t('grid.delrow')}${many ? ` (${sel.length})` : ''}`, icon: 'trash', danger: true, action: () => {
+        if (many) {
+          for (const k of sel) { const kk = rowKeys(rows[k]); if (kk) deletes.push({ keys: kk }); }
+          updateDirtyBadge();
+        } else if (keys) { deletes.push({ keys }); updateDirtyBadge(); }
+        else toast(t('grid.nopk'), 'err');
+      } },
+      { label: `Copy rows (JSON)${many ? ` ×${rowsToCopy.length}` : ''}`, icon: 'copy', action: () => copyText(JSON.stringify(rowsToCopy, null, 2)) },
+      { label: 'Copy rows (CSV)', icon: 'copy', action: () => {
+        const esc = (s) => (/[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s);
+        const lines = [fields.map(f => esc(f.name)).join(',')];
+        for (const r of rowsToCopy) lines.push(fields.map(f => esc(r[f.name] === null ? 'NULL' : String(r[f.name]))).join(','));
+        copyText(lines.join('\n'));
+      } },
+      { label: 'Copy as INSERT', icon: 'sql', action: () => copyText(rowsToCopy.map(buildInsert).join('\n')) },
     ]);
   }
 
@@ -408,10 +461,15 @@ async function buildDataView(tab, view, connId, db, table, isView) {
   }
 
   delBtn.addEventListener('click', () => {
-    if (grid.selectedRow == null) { toast('เลือกแถวก่อน / Select a row first', 'info'); return; }
-    const keys = rowKeys(rows[grid.selectedRow]);
-    if (!keys) { toast(t('grid.nopk'), 'err'); return; }
-    deletes.push({ keys });
+    const sel = [...grid.selectedRows].filter(k => k < rows.length);
+    const targets = sel.length ? sel : (grid.selectedRow != null ? [grid.selectedRow] : []);
+    if (!targets.length) { toast('เลือกแถวก่อน / Select row(s) first', 'info'); return; }
+    let ok = 0;
+    for (const k of targets) {
+      const keys = rowKeys(rows[k]);
+      if (keys) { deletes.push({ keys }); ok++; }
+    }
+    if (!ok) { toast(t('grid.nopk'), 'err'); return; }
     updateDirtyBadge();
   });
 

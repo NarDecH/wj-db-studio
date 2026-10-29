@@ -556,6 +556,33 @@ class DBManager {
 
   // ================= server admin =================
 
+  /** Search a value across tables of a database (LIKE on text cols, equality on numeric). */
+  async findInDatabase(connId, { db, term, tables = null, limitPerTable = 20, maxTables = 80 }) {
+    const objs = await this.listObjects(connId, db);
+    const targets = tables && tables.length ? objs.tables.filter(t => tables.includes(t.name)) : objs.tables.slice(0, maxTables);
+    const isNum = /^-?\d+(\.\d+)?$/.test(term);
+    const out = [];
+    for (const t of targets) {
+      try {
+        const cols = await this.tableColumns(connId, db, t.name);
+        const conds = [];
+        for (const c of cols) {
+          if (/CHAR|TEXT|ENUM|SET/i.test(c.type)) conds.push(DBManager.escId(c.name) + ' LIKE ?');
+          else if (isNum && /INT|DEC|NUM|FLOAT|DOUB/i.test(c.type)) conds.push(DBManager.escId(c.name) + ' = ?');
+        }
+        if (!conds.length) continue;
+        const r = await this.query(connId,
+          `SELECT * FROM ${DBManager.qRef(db, t.name)} WHERE ${conds.join(' OR ')} LIMIT ${limitPerTable}`,
+          conds.map(() => term), { db, timeoutSec: 10 });
+        if (r.results[0].rows.length) {
+          out.push({ table: t.name, rows: r.results[0].rows.slice(0, limitPerTable), fields: r.results[0].fields.map(f => f.name) });
+        }
+      } catch { /* skip problematic table */ }
+    }
+    this._log('query', connId, `-- FIND IN DATABASE '${term}' in ${db} (${out.length} table(s) matched)`, null, null, true, null, db);
+    return out;
+  }
+
   async processList(connId) {
     const r = await this.query(connId, 'SHOW FULL PROCESSLIST', {}, { timeoutSec: 10 });
     return r.results[0].rows;
@@ -719,7 +746,58 @@ class DBManager {
 
   // ================= import =================
 
-  async importCsv(connId, { filePath, db, table, delimiter = ',', firstRowHeaders = true, encoding = 'utf8', truncateFirst = false, batchSize = 300, onProgress }) {
+  /** Guess a column type from sample values (for auto table creation). */
+  _inferType(values) {
+    let allInt = true, allNum = true, allDate = true, allDateTime = true, maxLen = 0;
+    for (const v of values) {
+      if (v === null || v === undefined || v === '') continue;
+      const s = v instanceof Date ? v.toISOString().slice(0, 19).replace('T', ' ') : String(v);
+      maxLen = Math.max(maxLen, s.length);
+      if (!/^-?\d+$/.test(s)) allInt = false;
+      if (!/^-?\d+(\.\d+)?$/.test(s)) allNum = false;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(s) && !(v instanceof Date)) allDate = false;
+      if (!/^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?$/.test(s) && !(v instanceof Date)) allDateTime = false;
+    }
+    if (maxLen === 0) return 'VARCHAR(50)';
+    if (allInt && maxLen <= 9) return 'INT';
+    if (allInt) return 'BIGINT';
+    if (allNum) return 'DECIMAL(18,4)';
+    if (allDateTime) return 'DATETIME';
+    if (allDate) return 'DATE';
+    if (maxLen <= 255) return `VARCHAR(${Math.max(20, Math.min(255, Math.ceil(maxLen * 1.5)))})`;
+    return 'TEXT';
+  }
+
+  static safeIdent(name, used) {
+    let n = String(name || '').replace(/[^\wก-๙]+/g, '_').replace(/^_+|_+$/g, '');
+    if (!n || /^\d/.test(n)) n = 'col_' + n;
+    while (used.has(n.toLowerCase())) n = n + '_2';
+    used.add(n.toLowerCase());
+    return n;
+  }
+
+  /** Create table from header+sample rows (auto id PK + inferred types). */
+  async _autoCreateTable(connId, db, table, header, sampleRows) {
+    const chk = await this.query(connId,
+      "SELECT COUNT(*) n FROM information_schema.TABLES WHERE TABLE_SCHEMA=? AND TABLE_NAME=?",
+      [db, table], { db });
+    if (Number(chk.results[0].rows[0]?.n || 0) > 0) return false; // exists -> plain insert
+    const used = new Set(['id']);
+    const colDefs = header.map((h, j) =>
+      DBManager.escId(DBManager.safeIdent(h, used)) + ' ' + this._inferType(sampleRows.map(r => r[j])));
+    const sql = 'CREATE TABLE ' + DBManager.qRef(db, table) + ' (\n  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,\n  '
+      + colDefs.join(',\n  ') + '\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
+    await this.exec(connId, sql, { db });
+    return true;
+  }
+
+  /** Map original header names to the sanitized ones (same algorithm as _autoCreateTable). */
+  _mappedHeader(header) {
+    const used = new Set(['id']);
+    return header.map(h => DBManager.safeIdent(h, used));
+  }
+
+  async importCsv(connId, { filePath, db, table, delimiter = ',', firstRowHeaders = true, encoding = 'utf8', truncateFirst = false, batchSize = 300, createTable = false, onProgress }) {
     const text = fs.readFileSync(filePath, encoding);
     const rows = parseCsv(text, delimiter);
     if (!rows.length) return { count: 0 };
@@ -729,7 +807,11 @@ class DBManager {
       header = rows[0].map((_, i) => 'col' + (i + 1));
       dataRows = rows;
     }
-    if (truncateFirst) await this.exec(connId, 'TRUNCATE TABLE ' + DBManager.qRef(db, table));
+    if (createTable) {
+      await this._autoCreateTable(connId, db, table, header, dataRows.slice(0, 200));
+      header = this._mappedHeader(header);
+    }
+    if (truncateFirst) await this.exec(connId, 'TRUNCATE TABLE ' + DBManager.qRef(db, table), { db });
     const cols = header.map(DBManager.escId).join(', ');
     const base = 'INSERT INTO ' + DBManager.qRef(db, table) + ' (' + cols + ') VALUES ';
     let count = 0;
@@ -741,8 +823,8 @@ class DBManager {
       count += chunk.length;
       if (onProgress) onProgress({ done: count, total: dataRows.length });
     }
-    this._log('io', connId, `-- IMPORT CSV ${filePath} -> ${db}.${table} (${count} rows)`, null, count, true, null, db);
-    return { count, columns: header };
+    this._log('io', connId, `-- IMPORT CSV ${filePath} -> ${db}.${table} (${count} rows${createTable ? ', table auto-created' : ''})`, null, count, true, null, db);
+    return { count, columns: header, created: !!createTable };
   }
 
   async importJson(connId, { filePath, db, table, truncateFirst = false, batchSize = 300 }) {    const arr = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -763,10 +845,14 @@ class DBManager {
   }
 
   /** Import an Excel workbook sheet (.xlsx/.xls) into a table. */
-  async importXlsx(connId, { filePath, db, table, sheetIndex = 0, truncateFirst = false, batchSize = 300 }) {
+  async importXlsx(connId, { filePath, db, table, sheetIndex = 0, truncateFirst = false, batchSize = 300, createTable = false }) {
     const { readXlsx } = require('./xlsxio');
     const { sheet, header, rows } = readXlsx(filePath, sheetIndex);
     if (!rows.length) return { count: 0, sheet };
+    if (createTable) {
+      await this._autoCreateTable(connId, db, table, header, rows.slice(0, 200));
+      header = this._mappedHeader(header);
+    }
     if (truncateFirst) await this.exec(connId, 'TRUNCATE TABLE ' + DBManager.qRef(db, table), { db });
     const cols = header.map(DBManager.escId).join(', ');
     const base = 'INSERT INTO ' + DBManager.qRef(db, table) + ' (' + cols + ') VALUES ';
@@ -780,8 +866,8 @@ class DBManager {
       await this.exec(connId, base + '\n' + values, { db });
       count += chunk.length;
     }
-    this._log('io', connId, `-- IMPORT XLSX ${filePath} [${sheet}] -> ${db}.${table} (${count} rows)`, null, count, true, null, db);
-    return { count, sheet, columns: header };
+    this._log('io', connId, `-- IMPORT XLSX ${filePath} [${sheet}] -> ${db}.${table} (${count} rows${createTable ? ', table auto-created' : ''})`, null, count, true, null, db);
+    return { count, sheet, columns: header, created: !!createTable };
   }
 
   /** Execute a .sql script file (split on ; at line ends, respecting strings). */

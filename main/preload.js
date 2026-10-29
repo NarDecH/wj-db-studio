@@ -80,6 +80,7 @@ const api = {
   importCsv: (args) => invoke('io:importCsv')(args),
   importJson: (args) => invoke('io:importJson')(args),
   importXlsx: (args) => invoke('io:importXlsx')(args),
+  findInDatabase: (args) => invoke('db:findInDatabase')(args),
   runSqlFile: (args) => invoke('io:runSqlFile')(args),
   backup: (args) => invoke('io:backup')(args),
 

@@ -183,6 +183,7 @@ function registerIpc() {
   ipcMain.handle('io:importCsv', (_e, args) => dbm.importCsv(args.connId, args));
   ipcMain.handle('io:importJson', (_e, args) => dbm.importJson(args.connId, args));
   ipcMain.handle('io:importXlsx', (_e, args) => dbm.importXlsx(args.connId, args));
+  ipcMain.handle('db:findInDatabase', (_e, args) => dbm.findInDatabase(args.connId, args));
   ipcMain.handle('io:runSqlFile', (_e, args) => dbm.runSqlFile(args.connId, args));
   ipcMain.handle('io:backup', (_e, args) => dbm.backup(args.connId, args));
 

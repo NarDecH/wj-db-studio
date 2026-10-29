@@ -38,6 +38,7 @@ export function importDialog(connId, db, table) {
     el('option', { value: '|', text: '|' }));
   const headersChk = el('input', { type: 'checkbox' }); headersChk.checked = true;
   const truncChk = el('input', { type: 'checkbox' });
+  const createChk = el('input', { type: 'checkbox' });
   const dbInput = el('input', { type: 'text', value: db || '' });
   const tableInput = el('input', { type: 'text', value: table || '' });
 
@@ -71,6 +72,7 @@ export function importDialog(connId, db, table) {
       el('div', { class: 'form-row' }, el('label', { text: t('imp.delim') }), delimSel),
       el('label', { class: 'check' }, headersChk, el('span', { text: t('imp.headers') })),
       el('label', { class: 'check' }, truncChk, el('span', { text: t('imp.truncate') })),
+      el('label', { class: 'check' }, createChk, el('span', { text: t('imp.createtable') })),
       progress),
     footer: [
       el('button', { class: 'btn', onclick: () => r.close(), text: t('conn.cancel') }),
@@ -90,9 +92,9 @@ export function importDialog(connId, db, table) {
     try {
       let out;
       if (kindSel.value === 'csv') {
-        out = await window.wjds.importCsv({ connId: cid, filePath: file, db: database, table: tbl, delimiter: delimSel.value, firstRowHeaders: headersChk.checked, truncateFirst: truncChk.checked });
+        out = await window.wjds.importCsv({ connId: cid, filePath: file, db: database, table: tbl, delimiter: delimSel.value, firstRowHeaders: headersChk.checked, truncateFirst: truncChk.checked, createTable: createChk.checked });
       } else if (kindSel.value === 'xlsx') {
-        out = await window.wjds.importXlsx({ connId: cid, filePath: file, db: database, table: tbl, truncateFirst: truncChk.checked });
+        out = await window.wjds.importXlsx({ connId: cid, filePath: file, db: database, table: tbl, truncateFirst: truncChk.checked, createTable: createChk.checked });
       } else if (kindSel.value === 'json') {
         out = await window.wjds.importJson({ connId: cid, filePath: file, db: database, table: tbl, truncateFirst: truncChk.checked });
       } else {
