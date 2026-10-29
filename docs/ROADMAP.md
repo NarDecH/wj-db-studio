@@ -47,13 +47,13 @@ GRANT ระดับ database, แก้บั๊ก backup prefix ร้าย
 
 ## v2.0 — "ขยายขอบเขต" (ระยะยาว)
 
-| ฟีเจอร์ | รายละเอียด | ความยาก |
+| ฟีเจอร์ | รายละเอียด | สถานะ |
 |---|---|---|
-| **PostgreSQL / SQLite** | แยก driver layer ออกจาก db.js เป็นสถาปัตยกรรม adapter | ⭐⭐⭐⭐⭐ |
-| **Visual Query Builder** | ลากตาราง + JOIN + เงื่อนไขแบบกราฟิก | ⭐⭐⭐⭐ |
-| **Plugin system** | โหลดส่วนเสริมจากโฟลเดอร์ (เช่น รูปแบบ export ใหม่) | ⭐⭐⭐⭐ |
-| **CLI mode** | `wjdb --conn name "SELECT ..."` สำหรับ script/automation | ⭐⭐ |
-| **เว็บไซต์ + docs** | GitHub Pages จากเอกสารที่มี | ⭐⭐ |
+| **CLI mode** | `WJ DB Studio.exe --exec "SQL" --conn "name"` — พิมพ์ผลเป็น TSV ไม่เปิดหน้าต่าง (ใช้ในสคริปต์/cron ได้) | ✅ เสร็จแล้ว |
+| **PostgreSQL / SQLite** | แยก driver layer ออกจาก db.js เป็นสถาปัตยกรรม adapter | ⏳ แผนถัดไป |
+| **Visual Query Builder** | ลากตาราง + JOIN + เงื่อนไขแบบกราฟิก | ⏳ |
+| **Plugin system** | โหลดส่วนเสริมจากโฟลเดอร์ (เช่น รูปแบบ export ใหม่) | ⏳ |
+| **เว็บไซต์ + docs** | GitHub Pages จากเอกสารที่มี | ⏳ |
 
 ## งานต่อเนื่อง (ทำควบคู่ทุกเวอร์ชัน)
 
