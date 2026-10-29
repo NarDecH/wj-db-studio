@@ -6,7 +6,7 @@ import { el, ic, toast, showModal } from './utils.js';
 import { t } from './i18n.js';
 
 export function chartDialog(fields, rows) {
-  const numeric = fields.filter(f => rows.some(r => typeof r[f.name] === 'number' && isFinite(r[f.name])));
+  const numeric = fields.filter(f => rows.some(r => { const n = Number(r[f.name]); return r[f.name] !== null && r[f.name] !== '' && isFinite(n); }));
   if (!numeric.length) { toast(t('chart.nonum'), 'err'); return; }
   const xSel = el('select', {}, fields.map(f => el('option', { value: f.name, text: f.name })));
   const ySel = el('select', {}, numeric.map(f => el('option', { value: f.name, text: f.name })));
