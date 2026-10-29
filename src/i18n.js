@@ -20,6 +20,8 @@ export const I18N = {
     'conn.sshpass': 'SSH password', 'conn.sshkey': 'Private key file', 'conn.test': 'Test',
     'conn.save': 'Save', 'conn.cancel': 'Cancel', 'conn.delete': 'Delete',
     'conn.testok': 'Connection successful', 'conn.testfail': 'Connection failed',
+    'conn.readonly': 'Read-only connection (SELECT/SHOW/EXPLAIN only)',
+    'msg.connlost': 'Connection lost: {name}',
     'conn.saved': 'Connection saved', 'conn.deleted': 'Connection deleted',
     'conn.confirmDelete': 'Delete this connection?', 'conn.empty': 'No connections yet.\nClick + to add your first database connection.',
 
@@ -73,7 +75,7 @@ export const I18N = {
     'srv.dbsize': 'Total size of databases', 'srv.processlist': 'Process List', 'srv.kill': 'Kill',
     'srv.killquery': 'Kill Query', 'srv.vars': 'Variables', 'srv.status': 'Status',
     'srv.search': 'Search…', 'srv.confirmKill': 'Kill process {id}?',
-    'srv.autorefresh': 'Auto refresh (5s)',
+    'srv.autorefresh': 'Auto refresh (5s)', 'srv.dbprivs': 'Database privileges',
 
     'usr.title': 'Users & Privileges', 'usr.new': 'Create User', 'usr.name': 'User', 'usr.host': 'Host',
     'usr.password': 'Password', 'usr.grants': 'Grants', 'usr.drop': 'Drop User', 'usr.setpass': 'Set Password',
@@ -131,6 +133,8 @@ export const I18N = {
     'conn.sshpass': 'รหัสผ่าน SSH', 'conn.sshkey': 'ไฟล์ Private key', 'conn.test': 'ทดสอบ',
     'conn.save': 'บันทึก', 'conn.cancel': 'ยกเลิก', 'conn.delete': 'ลบ',
     'conn.testok': 'เชื่อมต่อสำเร็จ', 'conn.testfail': 'เชื่อมต่อไม่สำเร็จ',
+    'conn.readonly': 'อ่านอย่างเดียว (SELECT/SHOW/EXPLAIN เท่านั้น)',
+    'msg.connlost': 'การเชื่อมต่อหลุด: {name}',
     'conn.saved': 'บันทึกการเชื่อมต่อแล้ว', 'conn.deleted': 'ลบการเชื่อมต่อแล้ว',
     'conn.confirmDelete': 'ลบการเชื่อมต่อนี้?', 'conn.empty': 'ยังไม่มีการเชื่อมต่อ\nกด + เพื่อเพิ่มการเชื่อมต่อฐานข้อมูลแรกของคุณ',
 
@@ -184,7 +188,7 @@ export const I18N = {
     'srv.dbsize': 'ขนาดฐานข้อมูลรวม', 'srv.processlist': 'Process List', 'srv.kill': 'Kill',
     'srv.killquery': 'Kill Query', 'srv.vars': 'ตัวแปรระบบ', 'srv.status': 'สถานะ',
     'srv.search': 'ค้นหา…', 'srv.confirmKill': 'Kill process {id}?',
-    'srv.autorefresh': 'รีเฟรชอัตโนมัติ (5 วิ)',
+    'srv.autorefresh': 'รีเฟรชอัตโนมัติ (5 วิ)', 'srv.dbprivs': 'สิทธิ์ระดับฐานข้อมูล',
 
     'usr.title': 'ผู้ใช้และสิทธิ์', 'usr.new': 'สร้างผู้ใช้', 'usr.name': 'ผู้ใช้', 'usr.host': 'โฮสต์',
     'usr.password': 'รหัสผ่าน', 'usr.grants': 'สิทธิ์', 'usr.drop': 'ลบผู้ใช้', 'usr.setpass': 'ตั้งรหัสผ่าน',

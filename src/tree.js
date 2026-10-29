@@ -11,6 +11,19 @@ import { openConnectionDialog } from './connections.js';
 let hooks = null;
 const connState = new Map(); // id -> {connected, expanded, dbs}
 
+// connection lost (keepalive detected) -> mark node disconnected
+window.addEventListener('db-lost', (e) => {
+  const cs = connState.get(e.detail.connId);
+  if (cs) {
+    cs.connected = false; cs.err = true; cs.dbs = null;
+    if (cs.expandedDbs) cs.expandedDbs.clear();
+  }
+  if (hooks) {
+    hooks.onConnectStatus(e.detail.connId, null);
+    renderTree();
+  }
+});
+
 export function initTree(h) {
   hooks = h;
   renderTree();
@@ -148,6 +161,14 @@ function connMenu(e, meta) {
   }
   items.push('-');
   items.push({ label: t('conn.edit'), icon: 'edit', action: () => openConnectionDialog({ conn: meta, onSaved: () => renderTree() }) });
+  items.push({
+    label: 'Duplicate', icon: 'copy', action: async () => {
+      const copy = { ...meta, id: undefined, name: meta.name + ' copy', password: undefined };
+      await window.wjds.saveConnection(copy);
+      await reloadConnections();
+      renderTree();
+    },
+  });
   items.push({ label: t('ctx.query'), icon: 'code', action: () => import('./editor.js').then(m => m.openEditor({ connId: meta.id })) });
   items.push({ label: t('bk.title'), icon: 'backup', action: () => import('./importer.js').then(m => m.backupDialog(meta.id)) });
   items.push('-');
@@ -338,6 +359,7 @@ function itemMenu(e, meta, db, attr, item) {
     items.push({ label: t('ctx.selectdata'), icon: 'table', action: () => hooks.openTableData({ connId: meta.id, db: db.name, table: item.name }) });
     items.push({ label: t('ctx.altertable'), icon: 'edit', action: () => hooks.openDesigner({ connId: meta.id, db: db.name, table: item.name }) });
     items.push({ label: t('ctx.ddlview'), icon: 'code', action: () => showDDL(meta.id, db.name, item.name) });
+    items.push({ label: t('ctx.rename'), icon: 'pencil', action: () => renameDialog(meta.id, db.name, item.name) });
     items.push('-');
     items.push({ label: t('ctx.import'), icon: 'import', action: () => import('./importer.js').then(m => m.importDialog(meta.id, db.name, item.name)) });
     items.push({ label: t('ctx.dumpdata'), icon: 'backup', action: () => import('./importer.js').then(m => m.backupDialog(meta.id, db.name, item.name)) });
@@ -387,6 +409,29 @@ export async function showDDL(connId, db, table) {
         el('button', { class: 'btn', onclick: async () => { await navigator.clipboard.writeText(ddl); toast(t('msg.copied'), 'ok'); } }, ic('copy'), 'Copy')));
     showModal({ title: `${db}.${table}`, icon: 'code', body, width: '760px' });
   } catch (err) { toast(t('msg.error'), 'err', err.message); }
+}
+
+export async function renameDialog(connId, db, oldName) {
+  const { showModal, toast: t2 } = await import('./utils.js');
+  const inp = el('input', { type: 'text', value: oldName });
+  const r = showModal({
+    title: t('ctx.rename'), icon: 'pencil', width: '420px',
+    body: el('div', { class: 'form' }, el('div', { class: 'form-row' }, el('label', { text: t('ds.tablename') }), inp)),
+    footer: [
+      el('button', { class: 'btn', onclick: () => r.close(), text: t('conn.cancel') }),
+      el('button', { class: 'btn primary', onclick: async () => {
+        const newName = inp.value.trim();
+        if (!newName || newName === oldName) return;
+        try {
+          await window.wjds.renameObject({ connId, db, table: oldName, newName });
+          toast('✓ ' + oldName + ' → ' + newName, 'ok');
+          r.close();
+          renderTree();
+        } catch (err) { t2(t('msg.error'), 'err', err.message); }
+      } }, ic('ok'), el('span', { text: t('conn.save') })),
+    ],
+  });
+  setTimeout(() => inp.focus(), 60);
 }
 
 function createDbDialog(meta, cs) {

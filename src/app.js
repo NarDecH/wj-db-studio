@@ -207,6 +207,12 @@ function initToolbar() {
   $('#tb-users').addEventListener('click', () => openUsers());
   $('#tb-help').addEventListener('click', () => toggleHelp());
   $('#tb-settings').addEventListener('click', () => showSettings(applyAll));
+  $('#tb-theme').addEventListener('click', async () => {
+    const next = state.settings.theme === 'light' ? 'dark' : 'light';
+    await saveSettings({ theme: next });
+    applySettings();
+    $('#tb-theme').querySelector('.tb-ic').innerHTML = ic(next === 'light' ? 'sun' : 'moon').innerHTML;
+  });
   $('#conn-add').addEventListener('click', () => openConnectionDialog({ onSaved: refreshTree }));
   $('#tree-refresh').addEventListener('click', () => refreshTree(true));
   $('#tree-filter').addEventListener('input', debounce(() => refreshTree(false, $('#tree-filter').value), 250));
@@ -267,6 +273,8 @@ export function applySettings() {
   document.documentElement.style.setProperty('--edfs', s.editorFontSize + 'px');
   setLanguage(s.language);
   applyI18n();
+  const themeIc = $('#tb-theme .tb-ic');
+  if (themeIc) themeIc.innerHTML = ic(s.theme === 'light' ? 'sun' : 'moon').innerHTML;
 }
 
 async function applyAll() {
@@ -289,6 +297,14 @@ async function boot() {
   initHelp();
   initSqlLogUI();
   initUpdateBadge();
+  window.wjds.onDbEvent(async (payload) => {
+    if (payload.type === 'lost') {
+      const meta = connMeta(payload.connId);
+      toast(t('msg.connlost', { name: meta ? meta.name : payload.connId }), 'err');
+      logResult('✗ ' + t('msg.connlost', { name: meta ? meta.name : payload.connId }), false);
+      window.dispatchEvent(new CustomEvent('db-lost', { detail: { connId: payload.connId } }));
+    }
+  });
   initTree({
     onConnectStatus: (id, info) => {
       const meta = connMeta(id);

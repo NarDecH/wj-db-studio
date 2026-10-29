@@ -204,7 +204,10 @@ app.whenReady().then(() => {
   store = new Store();
   sqllog = new SQLLog({ userDataDir: app.getPath('userData'), store });
   sqllog.prune(store.getSettings().sqlLogDays || 30);
-  dbm = new DBManager(store, sqllog);
+  dbm = new DBManager(store, sqllog, (channel, payload) => {
+    const w = getMainWindow();
+    if (w && !w.isDestroyed()) w.webContents.send(channel, payload);
+  });
   registerIpc();
   buildMenu({ getMainWindow, store, openAbout, checkUpdates });
   createWindow();

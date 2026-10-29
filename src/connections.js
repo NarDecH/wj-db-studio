@@ -23,6 +23,8 @@ export function openConnectionDialog(opts = {}) {
   const pass = el('input', { type: 'password', value: '', placeholder: conn && conn.passwordStored ? '•••••••• (saved)' : '' });
   const ssl = el('input', { type: 'checkbox' });
   ssl.checked = !!(conn && conn.ssl);
+  const roChk = el('input', { type: 'checkbox' });
+  roChk.checked = !!(conn && conn.readOnly);
   const sslCa = el('input', { type: 'text', value: conn ? (conn.sslCa || '') : '', placeholder: 'C:\\path\\ca.pem' });
   const caBrowse = el('button', { class: 'mini-btn', text: '…', onclick: async () => {
     const f = await window.wjds.pickFile({ title: 'CA certificate', filters: [{ name: 'PEM', extensions: ['pem', 'crt', 'cer'] }] });
@@ -62,6 +64,7 @@ export function openConnectionDialog(opts = {}) {
           el('div', {}, fieldLabel(t('conn.user')), user)),
         row(t('conn.pass'), pass),
         el('label', { class: 'check' }, ssl, el('span', { text: t('conn.ssl') })),
+        el('label', { class: 'check', title: t('conn.readonly') }, roChk, el('span', { text: '🔒 ' + t('conn.readonly') })),
         row(t('conn.sslca'), el('div', { style: { display: 'flex', gap: '6px' } }, sslCa, caBrowse)))),
     el('fieldset', {},
       el('label', { class: 'check', style: { marginBottom: '8px' } }, sshEnabled, el('span', { text: t('conn.ssh') })),
@@ -83,6 +86,7 @@ export function openConnectionDialog(opts = {}) {
       clearPassword: !pass.value && !ssl.checked ? undefined : undefined,
       ssl: ssl.checked,
       sslCa: sslCa.value.trim(),
+      readOnly: roChk.checked,
       ssh: {
         enabled: sshEnabled.checked,
         host: sshHost.value.trim(),

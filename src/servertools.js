@@ -262,9 +262,9 @@ async function buildUsersView(tab, view, connId) {
       const grants = await window.wjds.userGrants(connId, user, host);
       const pre = el('div', { class: 'ds-code', style: { maxHeight: '400px' }, text: grants.join('\n\n') });
       grantsEl.append(pre);
-      // quick grant editor
+      // quick grant editor — global
       const privChecks = GLOBAL_PRIVS.map(p => ({ p, chk: el('input', { type: 'checkbox' }) }));
-      const applyBtn = el('button', { class: 'btn primary', onclick: doGrant }, ic('ok'), el('span', { text: 'GRANT' }));
+      const applyBtn = el('button', { class: 'btn primary', onclick: doGrant }, ic('ok'), el('span', { text: 'GRANT (global)' }));
       grantsEl.append(el('h3', { style: { color: 'var(--text-dim)', fontSize: '12px', marginTop: '14px' }, text: t('usr.global') }),
         el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '4px' } },
           privChecks.map(x => el('label', { class: 'check' }, x.chk, el('span', { text: x.p, style: { fontSize: '11.5px' } })))),
@@ -275,6 +275,28 @@ async function buildUsersView(tab, view, connId) {
         try {
           await window.wjds.grant({ connId, user, host, privs, database: '*', withGrant: false });
           toast('✓ GRANT ' + privs.join(', '), 'ok');
+          showGrants(user, host);
+        } catch (err) { toast(t('msg.error'), 'err', err.message); }
+      }
+      // database-level grants
+      const DB_PRIVS = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'REFERENCES', 'INDEX', 'ALTER', 'CREATE VIEW', 'SHOW VIEW', 'CREATE ROUTINE', 'ALTER ROUTINE', 'EXECUTE', 'EVENT', 'TRIGGER', 'LOCK TABLES'];
+      const dbSel = el('select', {}, el('option', { value: '', text: '— ' + t('tree.databases') + ' —' }));
+      try { for (const d of await window.wjds.listDatabases(connId)) dbSel.append(el('option', { value: d.name, text: d.name })); } catch {}
+      const dbChecks = DB_PRIVS.map(p => ({ p, chk: el('input', { type: 'checkbox' }) }));
+      const applyDbBtn = el('button', { class: 'btn primary', onclick: doGrantDb }, ic('ok'), el('span', { text: 'GRANT (db.*)' }));
+      grantsEl.append(el('h3', { style: { color: 'var(--text-dim)', fontSize: '12px', marginTop: '14px' }, text: t('srv.dbprivs') }),
+        el('div', { class: 'tbl-toolbar' }, dbSel),
+        el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '4px' } },
+          dbChecks.map(x => el('label', { class: 'check' }, x.chk, el('span', { text: x.p, style: { fontSize: '11.5px' } })))),
+        el('div', { class: 'tbl-toolbar' }, applyDbBtn));
+      async function doGrantDb() {
+        const database = dbSel.value;
+        if (!database) { toast('เลือกฐานข้อมูลก่อน', 'err'); return; }
+        const privs = dbChecks.filter(x => x.chk.checked).map(x => x.p);
+        if (!privs.length) return;
+        try {
+          await window.wjds.grant({ connId, user, host, privs, database, withGrant: false });
+          toast('✓ GRANT ' + privs.join(', ') + ' ON ' + database + '.*', 'ok');
           showGrants(user, host);
         } catch (err) { toast(t('msg.error'), 'err', err.message); }
       }

@@ -92,6 +92,7 @@ const api = {
   // events from main
   onMenuAction: (cb) => { ipcRenderer.on('menu:action', (_e, action) => cb(action)); },
   onUpdateEvent: (cb) => { ipcRenderer.on('update:event', (_e, payload) => cb(payload)); },
+  onDbEvent: (cb) => { ipcRenderer.on('db:event', (_e, payload) => cb(payload)); },
 };
 
 contextBridge.exposeInMainWorld('wjds', api);

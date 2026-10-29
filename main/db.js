@@ -10,12 +10,24 @@ const path = require('path');
 const net = require('net');
 
 class DBManager {
-  constructor(store, sqllog) {
+  constructor(store, sqllog, notify) {
     this.store = store;
     this.sqllog = sqllog || null;
+    this.notify = notify || (() => {});
     this.pools = new Map();      // connId -> mysql2 pool
     this.tunnels = new Map();    // connId -> ssh tunnel {client, server, port}
+    this.flags = new Map();      // connId -> { readOnly }
+    this.keepalive = new Map();  // connId -> interval
     this.seq = 0;
+  }
+
+  static RO_OK = /^\s*(SELECT|SHOW|DESCRIBE|DESC|EXPLAIN|ANALYZE|USE|SET|WITH|HELP|DO)\b/i;
+
+  _isReadOnly(connId) { return !!this.flags.get(connId)?.readOnly; }
+
+  clearKeepAlive(connId) {
+    const t = this.keepalive.get(connId);
+    if (t) { clearInterval(t); this.keepalive.delete(connId); }
   }
 
   /** Central SQL audit hook — every statement passes through here. */
@@ -69,9 +81,20 @@ class DBManager {
     // Validate the credentials right away
     await pool.query('SELECT 1');
     this.pools.set(connId, pool);
+    this.flags.set(connId, { readOnly: !!secret.readOnly });
     this.store.touchConnection(connId);
+    // keep-alive: detect dead connections every 30s
+    this.clearKeepAlive(connId);
+    this.keepalive.set(connId, setInterval(() => {
+      const p = this.pools.get(connId);
+      if (!p) return;
+      p.query('SELECT 1').catch(async () => {
+        await this.close(connId);
+        this.notify('db:event', { type: 'lost', connId });
+      });
+    }, 30000));
     const info = await this.serverInfo(connId);
-    this._log('connect', connId, `-- connect ${info.flavor} ${info.version} @ ${secret.host}:${secret.port}`, null, null, true, null, null);
+    this._log('connect', connId, `-- connect ${info.flavor} ${info.version} @ ${secret.host}:${secret.port}${secret.readOnly ? ' [READ-ONLY]' : ''}`, null, null, true, null, null);
     return info;
   }
 
@@ -103,6 +126,8 @@ class DBManager {
 
   async close(connId) {
     this._log('disconnect', connId, '-- disconnect', null, null, true, null, null);
+    this.clearKeepAlive(connId);
+    this.flags.delete(connId);
     const pool = this.pools.get(connId);
     if (pool) { try { await pool.end(); } catch {} this.pools.delete(connId); }
     const tunnel = this.tunnels.get(connId);
@@ -135,6 +160,9 @@ class DBManager {
   }
 
   async query(connId, sql, params = null, opts = {}) {
+    if (this._isReadOnly(connId) && !DBManager.RO_OK.test(sql)) {
+      throw new Error('🔒 This connection is READ-ONLY (SELECT/SHOW/EXPLAIN only)');
+    }
     const pool = this.pool(connId);
     const t0 = Date.now();
     const qopts = { timeout: (opts.timeoutSec || 30) * 1000 };
@@ -152,12 +180,19 @@ class DBManager {
       this._log('query', connId, sql, ms, rowCount, true, null, opts.db);
       return { results, ms };
     } catch (err) {
+      if (!opts._retry && /PROTOCOL_CONNECTION_LOST|ECONNRESET|Not connected|Connection lost|EPIPE/i.test(err.message || '')) {
+        try { await this.close(connId); await this.connect(connId); } catch {}
+        return this.query(connId, sql, params, { ...opts, _retry: true });
+      }
       this._log('query', connId, sql, Date.now() - t0, null, false, err.message, opts.db);
       throw err;
     }
   }
 
   async exec(connId, sql, opts = {}) {
+    if (this._isReadOnly(connId) && !DBManager.RO_OK.test(sql)) {
+      throw new Error('🔒 This connection is READ-ONLY (SELECT/SHOW/EXPLAIN only)');
+    }
     const pool = this.pool(connId);
     const t0 = Date.now();
     try {
@@ -166,6 +201,10 @@ class DBManager {
       this._log('exec', connId, sql, ms, res.affectedRows ?? null, true, null, opts.db);
       return { affected: res.affectedRows ?? null, insertId: res.insertId ?? null, ms };
     } catch (err) {
+      if (!opts._retry && /PROTOCOL_CONNECTION_LOST|ECONNRESET|Not connected|Connection lost|EPIPE/i.test(err.message || '')) {
+        try { await this.close(connId); await this.connect(connId); } catch {}
+        return this.exec(connId, sql, { ...opts, _retry: true });
+      }
       this._log('exec', connId, sql, Date.now() - t0, null, false, err.message, opts.db);
       throw err;
     }
@@ -363,6 +402,7 @@ class DBManager {
    * rows: { inserts: [ {values: {col: val}} ], updates: [ {keys: {}, values: {}} ], deletes: [ {keys: {}} ] }
    */
   async applyChanges(connId, { db, table, pks, inserts, updates, deletes }) {
+    if (this._isReadOnly(connId)) throw new Error('🔒 This connection is READ-ONLY');
     const tbl = DBManager.qRef(db, table);
     const stats = { inserted: 0, updated: 0, deleted: 0 };
     const isWhere = (keys) => {

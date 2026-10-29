@@ -98,6 +98,7 @@ class Store {
       user: String(conn.user || 'root').slice(0, 100),
       ssl: !!conn.ssl,
       sslCa: conn.sslCa ? String(conn.sslCa) : '',
+      readOnly: !!conn.readOnly,
       ssh: {
         enabled: !!(conn.ssh && conn.ssh.enabled),
         host: conn.ssh ? String(conn.ssh.host || '') : '',
