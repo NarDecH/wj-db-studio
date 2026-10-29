@@ -91,6 +91,8 @@ export const I18N = {
     'ds.colname': 'Name', 'ds.coltype': 'Type', 'ds.nullable': 'NULL', 'ds.default': 'Default',
     'ds.ai': 'Auto Inc', 'ds.comment': 'Comment', 'ds.engine': 'Engine', 'ds.charset': 'Charset',
     'ds.tablename': 'Table name', 'ds.preview': 'Preview SQL', 'ds.apply': 'Apply',
+    'ds.partitions': 'Partitions', 'ds.partnone': '— none —',
+    'ds.parthint': 'Note: partition expression columns must be part of every unique key. RANGE/LIST values: name=value, comma-separated.',
     'ds.applied': 'Table saved', 'ds.uniq': 'UNIQUE', 'ds.indexname': 'Index name', 'ds.ref': 'Reference (table) columns',
     'ds.ondelete': 'ON DELETE', 'ds.onupdate': 'ON UPDATE', 'ds.pk': 'Primary Key',
 
@@ -222,6 +224,8 @@ export const I18N = {
     'ds.colname': 'ชื่อ', 'ds.coltype': 'ชนิดข้อมูล', 'ds.nullable': 'NULL', 'ds.default': 'ค่าเริ่มต้น',
     'ds.ai': 'Auto Increment', 'ds.comment': 'คำอธิบาย', 'ds.engine': 'Engine', 'ds.charset': 'ชุดอักขระ',
     'ds.tablename': 'ชื่อตาราง', 'ds.preview': 'ดู SQL', 'ds.apply': 'บันทึก',
+    'ds.partitions': 'Partitions (การแบ่งย่อยตาราง)', 'ds.partnone': '— ไม่ใช้ —',
+    'ds.parthint': 'หมายเหตุ: คอลัมน์ที่ใช้ partition ต้องอยู่ใน unique key ทุกตัว · RANGE/LIST ใส่แบบ name=value คั่นด้วยจุลภาค',
     'ds.applied': 'บันทึกตารางแล้ว', 'ds.uniq': 'UNIQUE', 'ds.indexname': 'ชื่อดัชนี', 'ds.ref': 'ตาราง/คอลัมน์อ้างอิง',
     'ds.ondelete': 'ON DELETE', 'ds.onupdate': 'ON UPDATE', 'ds.pk': 'Primary Key',
 

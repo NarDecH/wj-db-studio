@@ -501,6 +501,7 @@ class DBManager {
       if (p.engine) sql += '\nENGINE=' + p.engine;
       if (p.charset) sql += ' DEFAULT CHARSET=' + p.charset;
       if (p.comment) sql += " COMMENT=" + DBManager.escValue(p.comment);
+      sql += this._partitionClause(p);
       return sql;
     }
     const alters = [];
@@ -524,13 +525,31 @@ class DBManager {
       else alters.push('DROP FOREIGN KEY ' + DBManager.escId(fk.oldName) + ', ADD ' + this._fkDef(fk, true));
     }
     if (p.newName && p.newName !== p.name) alters.push('RENAME TO ' + DBManager.qRef(p.db, p.newName));
-    if (!alters.length) return '';
+    if (!alters.length && !p.engine && !p.charset && !(p.partitions && p.partitions.type)) return '';
     let sql = 'ALTER TABLE ' + tbl + '\n  ' + alters.join(',\n  ');
     const tail = [];
     if (p.engine) tail.push('ENGINE=' + p.engine);
     if (p.charset) tail.push('DEFAULT CHARSET=' + p.charset);
     if (tail.length) sql += ',\n  ' + tail.join(', ');
+    sql += this._partitionClause(p);
     return sql;
+  }
+
+  _partitionClause(p) {
+    const pt = p.partitions;
+    if (!pt || !pt.type) return '';
+    const expr = String(pt.expr || '').trim();
+    if (!expr) return '';
+    if (pt.type === 'HASH' || pt.type === 'KEY') {
+      return '\nPARTITION BY ' + pt.type + '(' + expr + ')' + (pt.count ? ' PARTITIONS ' + parseInt(pt.count, 10) : '');
+    }
+    if (pt.type === 'RANGE' || pt.type === 'LIST') {
+      const parts = (pt.values || []).filter(v => v.name && v.value)
+        .map(v => 'PARTITION ' + DBManager.escId(v.name) + ' VALUES ' + (pt.type === 'RANGE' ? 'LESS THAN' : 'IN') + ' (' + v.value + ')');
+      if (!parts.length) return '';
+      return '\nPARTITION BY ' + pt.type + '(' + expr + ')\n(' + parts.join(',\n ') + ')';
+    }
+    return '';
   }
 
   _colDef(c) {

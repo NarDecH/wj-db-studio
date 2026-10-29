@@ -191,9 +191,26 @@ async function buildDesigner(tab, view, connId, db, tableName, isNew) {
 
   renderColumns(); renderIndexes(); renderFks();
 
+  // partitions editor (HASH/KEY/RANGE/LIST)
+  const pType = el('select', {},
+    el('option', { value: '', text: t('ds.partnone') }),
+    ['HASH', 'KEY', 'RANGE', 'LIST'].map(x => el('option', { value: x, text: x, selected: model.partitions?.type === x })));
+  if (model.partitions?.type) pType.value = model.partitions.type;
+  const pExpr = el('input', { type: 'text', value: model.partitions?.expr || '', placeholder: 'customer_id / YEAR(created_at)' });
+  const pCount = el('input', { type: 'number', value: model.partitions?.count || 4, min: '2', max: '1024' });
+  const pValues = el('input', { type: 'text', value: (model.partitions?.values || []).map(v => v.name + '=' + v.value).join(', '), placeholder: 'p1=10, p2=20 (RANGE/LIST)' });
+  const pRow = el('div', { class: 'form-grid3', style: { display: pType.value ? 'grid' : 'none' } }, pExpr, pCount, pValues);
+  pType.addEventListener('change', () => { pRow.style.display = pType.value ? 'grid' : 'none'; });
+
   // actions
   const previewBtn = el('button', { class: 'btn', onclick: doPreview }, ic('code'), el('span', { text: t('ds.preview') }));
   const applyBtn = el('button', { class: 'btn primary', onclick: doApply }, ic('save'), el('span', { text: t('ds.apply') }));
+
+  root.append(el('div', { class: 'ds-section' },
+    el('h3', {}, ic('index'), t('ds.partitions')),
+    el('div', { class: 'form-grid3' }, pType, pExpr, pCount),
+    el('div', { style: { marginTop: '6px' } }, pValues),
+    el('div', { class: 'muted', style: { fontSize: '11px', marginTop: '4px' }, text: t('ds.parthint') })));
 
   root.append(el('div', { style: { display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '12px' } }, previewBtn, applyBtn));
   root.append(dl);
@@ -206,6 +223,10 @@ async function buildDesigner(tab, view, connId, db, tableName, isNew) {
     model.comment = commentInput.value.trim();
     model.db = db;
     model.create = isNew;
+    model.partitions = pType.value ? {
+      type: pType.value, expr: pExpr.value.trim(), count: parseInt(pCount.value, 10) || 0,
+      values: pValues.value.split(',').map(s => { const [n, v] = s.split('='); return { name: (n || '').trim(), value: (v || '').trim() }; }),
+    } : null;
     return model;
   }
 
