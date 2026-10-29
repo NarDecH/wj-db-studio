@@ -956,7 +956,7 @@ class DBManager {
       if (!/^-?\d+$/.test(s)) allInt = false;
       if (!/^-?\d+(\.\d+)?$/.test(s)) allNum = false;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(s) && !(v instanceof Date)) allDate = false;
-      if (!/^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?$/.test(s) && !(v instanceof Date)) allDateTime = false;
+      if (!/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?$/.test(s) && !(v instanceof Date)) allDateTime = false;
     }
     if (maxLen === 0) return 'VARCHAR(50)';
     if (allInt && maxLen <= 9) return 'INT';
