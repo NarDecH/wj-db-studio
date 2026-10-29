@@ -50,7 +50,6 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, '..', 'src', 'index.html'));
   mainWindow.once('ready-to-show', () => {
     if (!SELFTEST) mainWindow.show();
-    else mainWindow.close();
   });
   mainWindow.on('closed', () => { mainWindow = null; });
 }
@@ -183,21 +182,48 @@ app.whenReady().then(() => {
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 
   if (SELFTEST) {
+    // capture renderer diagnostics
+    const diag = [];
+    mainWindow.webContents.on('console-message', (_e, level, message, line, sourceId) => {
+      diag.push({ level, message: String(message).slice(0, 300), source: String(sourceId).split(/[\\/]/).pop() + ':' + line });
+    });
+    mainWindow.webContents.on('preload-error', (_e, p, err) => diag.push({ preloadError: String(err) }));
+    mainWindow.webContents.on('render-process-gone', (_e, d) => diag.push({ renderGone: d.reason }));
+
     setTimeout(async () => {
+      const fs = require('fs');
       const checks = {
-        nodeElectron: process.versions.electron,
+        electron: process.versions.electron,
         store: !!store.data.settings.language,
         dbModule: typeof dbm.query === 'function',
+        escId: DBManager.escId('a`b') === '`a``b`',
+        csvParse: (() => { const { parseCsv } = require('./db'); return JSON.stringify(parseCsv('a,b\n"x,y",2')) === JSON.stringify([['a','b'],['x,y','2']]); })(),
+        sqlSplit: (() => { const { splitSqlStatements } = require('./db'); return splitSqlStatements("SELECT 1; INSERT INTO t VALUES ('a;b');").length === 2; })(),
         window: !!mainWindow,
       };
-      console.log('SELFTEST ' + JSON.stringify(checks));
+      const ok = checks.store && checks.dbModule && checks.escId && checks.csvParse && checks.sqlSplit && checks.window;
+      checks.ok = ok;
+      // Verify the renderer booted (home view rendered) when possible
+      try {
+        const dom = await mainWindow.webContents.executeJavaScript(
+          'JSON.stringify({tree: !!document.querySelector("#tree"), home: !!document.querySelector("#views .view"), tabs: document.querySelectorAll("#tabbar .tab").length, toastApi: typeof window.wjds.dbQuery})', true);
+        checks.renderer = JSON.parse(dom);
+        if (!checks.renderer.tree || !checks.renderer.home) checks.ok = false;
+      } catch (e) {
+        checks.renderer = { error: String(e && e.message || e) };
+        checks.ok = false;
+      }
+      try { console.log('SELFTEST ' + JSON.stringify(checks)); } catch {}
+      checks.diagnostics = diag;
+      try { fs.writeFileSync(path.join(app.getPath('temp'), 'wjds-selftest.json'), JSON.stringify(checks, null, 2)); } catch {}
       await dbm.closeAll();
-      app.exit(checks.store && checks.dbModule ? 0 : 1);
+      app.exit(ok ? 0 : 1);
     }, 2500);
   }
 });
 
 app.on('window-all-closed', async () => {
+  if (SELFTEST) return; // selftest exits explicitly
   if (dbm) await dbm.closeAll();
   if (process.platform !== 'darwin') app.quit();
 });

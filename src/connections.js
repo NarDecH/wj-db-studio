@@ -65,7 +65,7 @@ export function openConnectionDialog(opts = {}) {
         row(t('conn.sslca'), el('div', { style: { display: 'flex', gap: '6px' } }, sslCa, caBrowse)))),
     el('fieldset', {},
       el('label', { class: 'check', style: { marginBottom: '8px' } }, sshEnabled, el('span', { text: t('conn.ssh') })),
-      sshFields)));
+      sshFields));
 
   const foot = [delBtn, el('span', { class: 'spacer' }), testBtn, el('button', { class: 'btn', onclick: () => r.close(), text: t('conn.cancel') }), saveBtn].filter(Boolean);
   const r = showModal({ title: isEdit ? t('conn.edit') : t('conn.new'), icon: 'plug', body, footer: foot, width: '560px' });

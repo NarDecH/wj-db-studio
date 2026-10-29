@@ -496,6 +496,7 @@ legend { color: var(--text-dim); font-size: 12px; padding: 0 6px; }
   background: var(--bg1); border-left: 1px solid var(--border); box-shadow: var(--shadow);
   display: flex; flex-direction: column;
 }
+#help-panel[hidden] { display: none; }
 .hp-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 8px; }
 .hp-title { display: flex; align-items: center; gap: 8px; font-weight: 600; }
 .hp-title svg { width: 17px; height: 17px; color: var(--accent); }
