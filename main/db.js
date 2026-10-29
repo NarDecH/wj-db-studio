@@ -562,6 +562,57 @@ class DBManager {
     return s;
   }
 
+  // ================= data transfer =================
+
+  /** Copy a table (schema if needed + all rows) between connections/databases. */
+  async transferTable({ fromConnId, toConnId, fromDb, table, toDb, toTable, dropTarget = false, batchSize = 300 }) {
+    if (fromConnId === toConnId && fromDb === toDb && table === (toTable || table)) {
+      throw new Error('Source and target are the same table');
+    }
+    if (this._isReadOnly(toConnId)) throw new Error('🔒 Target connection is READ-ONLY');
+    const target = toTable || table;
+    const srcRef = DBManager.qRef(fromDb, table);
+    const dstRef = DBManager.qRef(toDb, target);
+
+    let created = false;
+    const chk = await this.query(toConnId,
+      "SELECT COUNT(*) n FROM information_schema.TABLES WHERE TABLE_SCHEMA=? AND TABLE_NAME=?", [toDb, target], { db: toDb });
+    const exists = Number(chk.results[0].rows[0]?.n || 0) > 0;
+    if (dropTarget && exists) {
+      await this.exec(toConnId, 'DROP TABLE ' + dstRef, { db: toDb });
+    }
+    if (!exists || dropTarget) {
+      const ddl = await this.tableDDL(fromConnId, fromDb, table);
+      await this.exec(toConnId, ddl, { db: toDb });
+      created = true;
+    }
+
+    const cols = (await this.tableColumns(fromConnId, fromDb, table)).map(c => c.name);
+    const pool = this.pool(fromConnId);
+    const conn = await pool.getConnection();
+    let count = 0;
+    try {
+      const query = conn.connection.query('SELECT * FROM ' + srcRef);
+      const stream = query.stream();
+      let batch = [];
+      const flush = async () => {
+        if (!batch.length) return;
+        const values = batch.map(row => '(' + cols.map(c => DBManager.escValue(row[c])).join(', ') + ')').join(',\n');
+        await this.exec(toConnId,
+          'INSERT INTO ' + dstRef + ' (' + cols.map(DBManager.escId).join(', ') + ') VALUES\n' + values,
+          { db: toDb, _retry: true });
+        count += batch.length;
+        batch = [];
+      };
+      for await (const row of stream) { batch.push(row); if (batch.length >= batchSize) await flush(); }
+      await flush();
+    } finally {
+      conn.release();
+    }
+    this._log('io', fromConnId, `-- TRANSFER ${srcRef} -> ${dstRef} (${count} rows, schema ${created ? 'created' : 'reused'})`, null, count, true, null, fromDb);
+    return { count, created };
+  }
+
   // ================= server admin =================
 
   /** Search a value across tables of a database (LIKE on text cols, equality on numeric). */

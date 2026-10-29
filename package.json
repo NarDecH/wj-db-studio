@@ -1,7 +1,7 @@
 {
   "name": "wj-db-studio",
   "productName": "WJ DB Studio",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "WJ DB Studio — a fast, modern, zero-setup database manager for MySQL and MariaDB",
   "author": "Weeradech Jessadarom",
   "license": "MIT",

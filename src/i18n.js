@@ -118,6 +118,8 @@ export const I18N = {
     'msg.error': 'Error', 'msg.running': 'Working…',
     'menu.closeTab': 'Close tab', 'menu.sessionrestored': 'Previous session restored',
     'er.title': 'ER Diagram',
+    'tr.title': 'Transfer a table between connections', 'tr.source': 'Source', 'tr.target': 'Target',
+    'tr.drop': 'Drop target table first', 'tr.run': 'Transfer', 'tr.done': 'Transferred {n} row(s) to {t}',
   },
 
   th: {
@@ -235,6 +237,8 @@ export const I18N = {
     'msg.error': 'ข้อผิดพลาด', 'msg.running': 'กำลังทำงาน…',
     'menu.closeTab': 'ปิดแท็บ', 'menu.sessionrestored': 'กู้คืนหน้าจอครั้งก่อนแล้ว',
     'er.title': 'แผนผังความสัมพันธ์ (ER)',
+    'tr.title': 'ย้าย/คัดลอกตารางข้ามการเชื่อมต่อ', 'tr.source': 'ต้นทาง', 'tr.target': 'ปลายทาง',
+    'tr.drop': 'ลบตารางปลายทางก่อน (Drop)', 'tr.run': 'ย้ายข้อมูล', 'tr.done': 'ย้าย {n} แถว ไป {t} แล้ว',
   },
 };
 

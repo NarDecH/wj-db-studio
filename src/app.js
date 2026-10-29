@@ -19,7 +19,7 @@ import { initHelp, toggleHelp, showHelp } from './help.js';
 import { initUpdateBadge } from './updaterui.js';
 import { initSqlLogUI, renderSqlLog } from './sqllogui.js';
 
-export const version = '1.0.0';
+export let version = '1.0.0';
 
 /* ==================== tabs ==================== */
 const tabs = new Map();
@@ -301,6 +301,7 @@ function initMenuActions() {
       case 'about': showAbout(version); break;
       case 'check-updates': import('./updaterui.js').then(m => m.checkUpdatesFlow()); break;
       case 'open-sqllog': import('./sqllogui.js').then(m => { m.renderSqlLog(); document.querySelector('[data-bp="sqllog"]')?.click(); }); break;
+      case 'transfer': import('./transfer.js').then(m => m.transferDialog()); break;
       case 'connect-active': {
         const meta = connMeta(state.currentConnId);
         if (meta) await window.wjds.dbConnect(meta.id);
@@ -330,6 +331,7 @@ async function applyAll() {
 
 /* ==================== boot ==================== */
 async function boot() {
+  version = await window.wjds.appVersion();
   await loadSettings();
   await loadConnections();
   applySettings();
