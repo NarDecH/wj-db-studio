@@ -7,6 +7,11 @@ Developed by **Weeradech Jessadarom**.
 
 First public release 🎉
 
+### Verified with live end-to-end testing
+Tested against a real **MariaDB 10.11** server (localhost): connection dialog with test-save,
+object explorer (7 databases), table data grid with Thai `utf8mb4` content, JOIN query with
+syntax highlighting and autocomplete — all passing (8/8 automated checks).
+
 ### Added
 - Connection manager: MySQL & MariaDB, SSL/TLS (+CA), SSH tunnels, test-before-save, groups
 - Object explorer: databases, tables, views, procedures, functions, triggers, events
