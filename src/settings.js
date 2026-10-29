@@ -112,15 +112,17 @@ export function showShortcuts() {
   const rows = [
     ['Ctrl+N', 'New connection / เชื่อมต่อใหม่'],
     ['Ctrl+T', 'New query tab / แท็บ SQL ใหม่'],
+    ['Ctrl+O', 'Open .sql file / เปิดไฟล์ SQL'],
+    ['Ctrl+S', 'Save .sql file / บันทึกไฟล์ SQL'],
     ['Ctrl+W', 'Close tab / ปิดแท็บ'],
     ['Ctrl+Enter', 'Execute SQL / รันคำสั่ง SQL'],
     ['Ctrl+Shift+Enter', 'Execute selection / รันเฉพาะที่เลือก'],
     ['Ctrl+Space', 'Autocomplete / ช่วยเติมคำ'],
+    ['Ctrl+F', 'Focus table filter / โฟกัสช่องกรองตาราง'],
     ['Ctrl+/', 'Toggle comment / คอมเมนต์'],
     ['Ctrl+,', 'Settings / ตั้งค่า'],
     ['F1', 'Help / ช่วยเหลือ'],
     ['F5', 'Refresh / รีเฟรช'],
-    ['Ctrl+/', 'Shortcuts / ปุ่มลัด'],
   ];
   const r = showModal({
     title: t('help.shortcuts') || 'Keyboard Shortcuts', icon: 'info', width: '480px',

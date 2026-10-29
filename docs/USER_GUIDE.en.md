@@ -101,13 +101,23 @@ import/export/backup summaries, connect/disconnect) is recorded automatically:
 - Privacy: parameterized statement **values are never written** — only the statement with `?` and a value count
 - Settings: on/off + retention days (default 30, pruned at startup)
 
-## 11. Security notes
+## 11. Extra features (v1.1)
+
+- **Find in database** (toolbar "Find"): search one value across every table, click a match to copy as JSON.
+- **Transfer table between connections** (Tools menu): any source → any target server, schema auto-created, rows streamed in batches.
+- **Auto-create table on import**: tick it when importing CSV/Excel — column types are inferred and an `id` PK is added.
+- **Read-only connection**: rejects every write (grid + SQL editor) — enforced in the main process.
+- **ER Diagram**: right-click a database → tables, columns and FK lines, zoomable.
+- **Session restore**: SQL tabs, open tables and the last connection come back on relaunch.
+- Rename table (right-click), duplicate connection, dark/light toolbar toggle, keep-alive with auto-reconnect.
+
+## 12. Security notes
 
 - Passwords are encrypted with the OS keychain (Electron safeStorage → DPAPI on Windows) and never leave the machine.
 - No telemetry, no analytics, no network calls except to your database servers and GitHub update checks.
 - Grid edits use parameterized statements.
 
-## 12. Troubleshooting
+## 13. Troubleshooting
 
 | Symptom | Fix |
 |---|---|

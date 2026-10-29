@@ -30,8 +30,50 @@ function topics() {
       id: 'sql',
       title: TH ? 'การเขียน SQL' : 'Writing SQL',
       body: TH
-        ? '• กดปุ่ม "SQL ใหม่" (Ctrl+T) เพื่อเปิดแท็บตัวแก้ไข\n• Ctrl+Enter = รัน, Ctrl+Shift+Enter = รันเฉพาะข้อความที่เลือก\n• Ctrl+Space = ช่วยเติมคำ (คีย์เวิร์ด ชื่อตาราง คอลัมน์)\n• Ctrl+/ = คอมเมนต์บรรทัดที่เลือก\n• รันได้หลายคำสั่งพร้อมกันโดยคั่นด้วย ;  (ผลลัพธ์แยกเป็นแท็บ)\n• ประวัติคำสั่งอยู่แผงล่าง คลิกเพื่อคัดลอกกลับ\n• บันทึก SQL ที่ใช้บ่อยไว้ในแท็บ "ตัวอย่าง SQL"'
-        : '• Press "New Query" (Ctrl+T) to open an editor tab.\n• Ctrl+Enter = run, Ctrl+Shift+Enter = run selection only.\n• Ctrl+Space = autocomplete (keywords, tables, columns).\n• Ctrl+/ = comment selected lines.\n• Multiple statements separated by ; run together (results in tabs).\n• Query history is in the bottom panel; click to reuse.\n• Save frequently used SQL under the "Snippets" tab.',
+        ? '• กดปุ่ม "SQL ใหม่" (Ctrl+T) เพื่อเปิดแท็บตัวแก้ไข\n• Ctrl+Enter = รัน, Ctrl+Shift+Enter = รันเฉพาะข้อความที่เลือก\n• Ctrl+Space = ช่วยเติมคำ (คีย์เวิร์ด ชื่อตาราง คอลัมน์)\n• Ctrl+O = เปิดไฟล์ .sql, Ctrl+S = บันทึกไฟล์ .sql\n• ปุ่ม EXPLAIN = ดูแผนประมวลผล, ANALYZE = รันจริงพร้อมสถิติ\n• Ctrl+/ = คอมเมนต์บรรทัดที่เลือก\n• รันได้หลายคำสั่งพร้อมกันโดยคั่นด้วย ;  (ผลลัพธ์แยกเป็นแท็บ)\n• ประวัติคำสั่งอยู่แผงล่าง คลิกเพื่อคัดลอกกลับ\n• บันทึก SQL ที่ใช้บ่อยไว้ในแท็บ "ตัวอย่าง SQL"'
+        : '• Press "New Query" (Ctrl+T) to open an editor tab.\n• Ctrl+Enter = run, Ctrl+Shift+Enter = run selection only.\n• Ctrl+Space = autocomplete (keywords, tables, columns).\n• Ctrl+O = open a .sql file, Ctrl+S = save to .sql file.\n• EXPLAIN button shows the plan; ANALYZE runs it with live statistics.\n• Ctrl+/ = comment selected lines.\n• Multiple statements separated by ; run together (results in tabs).\n• Query history is in the bottom panel; click to reuse.\n• Save frequently used SQL under the "Snippets" tab.',
+    },
+    {
+      id: 'sqllog',
+      title: TH ? 'SQL Log — บันทึกทุกคำสั่งที่รัน' : 'SQL Log — statement audit',
+      body: TH
+        ? 'ทุกคำสั่งที่โปรแกรมรัน (คิวรี, แก้ข้อมูล, DDL, นำเข้า/ส่งออก, เชื่อมต่อ) ถูกบันทึกอัตโนมัติ\n\n• ดูในแอป: แผงล่าง → แท็บ "SQL Log" (กรองข้อความ, เฉพาะที่ผิดพลาด, คลิกเพื่อคัดลอก)\n• ไฟล์: %APPDATA%\\WJ DB Studio\\logs\\sql-YYYY-MM-DD.log (1 ไฟล์/วัน)\n• เมนู เครื่องมือ → SQL Log = เปิดโฟลเดอร์ log\n• ค่าพารามิเตอร์ของ prepared statement ไม่ถูกเขียนลง log (เป็น ? + จำนวนค่า)\n• เปิด/ปิด + เก็บกี่วัน: อยู่ในตั้งค่า (default เก็บ 30 วัน)'
+        : 'Every executed statement (queries, grid edits, DDL, import/export, connect) is logged automatically.\n\n• In-app: bottom panel → "SQL Log" tab (text filter, errors-only, click to copy)\n• Files: %APPDATA%\\WJ DB Studio\\logs\\sql-YYYY-MM-DD.log (daily)\n• Menu Tools → SQL Log opens the folder\n• Parameterized values are never written — only ? placeholders + a count\n• On/off + retention in Settings (default 30 days)',
+    },
+    {
+      id: 'find',
+      title: TH ? 'ค้นหาค่าข้ามตาราง (Find in database)' : 'Find in database',
+      body: TH
+        ? 'ปุ่ม "ค้นหา" บนแถบเครื่องมือ: กรอกค่าที่ต้องการ → โปรแกรมไล่ค้นทุกตารางของฐานข้อมูล (LIKE บนคอลัมน์ข้อความ, ตรงกันบนคอลัมน์ตัวเลข) แล้วแสดงผลจับคู่พร้อมตารางที่พบ — คลิกผลลัพธ์เพื่อคัดลอกเป็น JSON'
+        : 'The "Find" toolbar button searches one value across every table of a database (LIKE on text columns, equality on numerics) and lists all matches per table — click a result to copy it as JSON.',
+    },
+    {
+      id: 'transfer',
+      title: TH ? 'ย้าย/คัดลอกตารางข้ามการเชื่อมต่อ' : 'Transfer a table between connections',
+      body: TH
+        ? 'เมนู เครื่องมือ → "ย้าย/คัดลอกตารางข้ามการเชื่อมต่อ": เลือกต้นทาง (connection + db + ตาราง) และปลายทาง (อีก connection ไหนก็ได้) → โปรแกรมสร้างตารางให้อัตโนมัติถ้ายังไม่มี แล้วสตรีมข้อมูลเป็นชุด — ใช้ย้ายข้อมูลข้าม server ได้โดยไม่ต้อง dump/import\n\n• ติ๊ก "ลบตารางปลายทางก่อน" เพื่อแทนที่ของเดิม\n• การเชื่อมต่อปลายทางต้องไม่เป็นโหมดอ่านอย่างเดียว'
+        : 'Menu Tools → "Transfer Table Between Connections": pick source (connection + db + table) and any target connection — the table is created automatically if missing and rows are streamed in batches. Use it to move data between servers without dump/import.\n\n• Tick "Drop target table first" to replace existing data\n• The target connection must not be read-only',
+    },
+    {
+      id: 'readonly',
+      title: TH ? 'โหมดอ่านอย่างเดียว (Read-only)' : 'Read-only connections',
+      body: TH
+        ? 'ตอนสร้าง connection ติ๊ก "🔒 อ่านอย่างเดียว" สำหรับฐานข้อมูล production — โปรแกรมจะปฏิเสธคำสั่ง INSERT/UPDATE/DELETE/DDL ทุกทาง (ทั้ง grid และ SQL editor) เหลือแต่ SELECT/SHOW/EXPLAIN — บังคับที่ระดับ main process จึงเปลี่ยนไม่ได้จากหน้าจอ'
+        : 'Tick "🔒 Read-only" when creating a connection for production databases — INSERT/UPDATE/DELETE/DDL are rejected everywhere (grid and SQL editor), leaving SELECT/SHOW/EXPLAIN. Enforced in the main process, not just the UI.',
+    },
+    {
+      id: 'er',
+      title: TH ? 'แผนผังความสัมพันธ์ (ER Diagram)' : 'ER Diagram',
+      body: TH
+        ? 'คลิกขวาที่ฐานข้อมูล → "แผนผังความสัมพันธ์ (ER)" — เห็นกล่องตาราง (คอลัมน์ + PK) และเส้นเชื่อม foreign key อัตโนมัติ ซูมด้วยปุ่ม + / − — ใช้ดูโครงสร้างรวมได้เร็ว'
+        : 'Right-click a database → "ER Diagram" — tables with columns (PK highlighted) and automatic foreign-key lines. Zoom with + / − for a quick structural overview.',
+    },
+    {
+      id: 'restore',
+      title: TH ? 'กู้คืนหน้าจอครั้งก่อน (Session restore)' : 'Session restore',
+      body: TH
+        ? 'โปรแกรมจำแท็บ SQL (พร้อมข้อความ), ตารางที่เปิดค้าง และ connection ล่าสุด — เปิดใหม่ครั้งถัดไปทุกอย่างกลับมาเอง'
+        : 'The app remembers open SQL tabs (with their text), data tables and the last connection — everything comes back on the next launch.',
     },
     {
       id: 'editdata',
