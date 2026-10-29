@@ -19,7 +19,7 @@ export function importDialog(connId, db, table) {
   async function pickFile() {
     const f = await window.wjds.pickFile({
       filters: [
-        { name: 'Data files', extensions: ['csv', 'tsv', 'txt', 'json', 'sql'] },
+        { name: 'Data files', extensions: ['csv', 'tsv', 'txt', 'json', 'sql', 'xlsx', 'xls'] },
         { name: 'All', extensions: ['*'] },
       ],
     });
@@ -28,6 +28,7 @@ export function importDialog(connId, db, table) {
 
   const kindSel = el('select', {},
     el('option', { value: 'csv', text: 'CSV / TSV' }),
+    el('option', { value: 'xlsx', text: 'Excel (.xlsx / .xls)' }),
     el('option', { value: 'json', text: 'JSON (array)' }),
     el('option', { value: 'sql', text: 'SQL script (.sql)' }));
   const delimSel = el('select', {},
@@ -44,6 +45,7 @@ export function importDialog(connId, db, table) {
     const f = fileInput.value.toLowerCase();
     if (f.endsWith('.json')) kindSel.value = 'json';
     else if (f.endsWith('.sql')) kindSel.value = 'sql';
+    else if (f.endsWith('.xlsx') || f.endsWith('.xls')) kindSel.value = 'xlsx';
     else if (f.endsWith('.tsv')) { kindSel.value = 'csv'; delimSel.value = '\t'; }
     else kindSel.value = 'csv';
     toggleCsvFields();
@@ -89,6 +91,8 @@ export function importDialog(connId, db, table) {
       let out;
       if (kindSel.value === 'csv') {
         out = await window.wjds.importCsv({ connId: cid, filePath: file, db: database, table: tbl, delimiter: delimSel.value, firstRowHeaders: headersChk.checked, truncateFirst: truncChk.checked });
+      } else if (kindSel.value === 'xlsx') {
+        out = await window.wjds.importXlsx({ connId: cid, filePath: file, db: database, table: tbl, truncateFirst: truncChk.checked });
       } else if (kindSel.value === 'json') {
         out = await window.wjds.importJson({ connId: cid, filePath: file, db: database, table: tbl, truncateFirst: truncChk.checked });
       } else {
@@ -110,8 +114,9 @@ export function importDialog(connId, db, table) {
 }
 
 /* ================= EXPORT (current query result rows) ================= */
-export function exportRowsDialog(fields, rows) {
+export function exportRowsDialog(fields, rows, suggestedName = 'export') {
   const fmtSel = el('select', {},
+    el('option', { value: 'xlsx', text: 'Excel (.xlsx)' }),
     el('option', { value: 'csv', text: 'CSV' }),
     el('option', { value: 'json', text: 'JSON' }),
     el('option', { value: 'sql', text: 'SQL INSERTs' }));
@@ -119,51 +124,50 @@ export function exportRowsDialog(fields, rows) {
     title: t('exp.title'), icon: 'export',
     body: el('div', { class: 'form' },
       el('div', { class: 'form-row' }, el('label', { text: t('exp.format') }), fmtSel),
-      el('div', { class: 'res-msg', text: `${rows.length} rows × ${fields.length} columns (in-memory export)` })),
+      el('div', { class: 'res-msg', text: `${rows.length} rows × ${fields.length} columns` })),
     footer: [
       el('button', { class: 'btn', onclick: () => r.close(), text: t('conn.cancel') }),
       el('button', { class: 'btn primary', onclick: () => doExportRows() }, ic('download'), el('span', { text: t('exp.run') })),
     ],
   });
 
-  function csvLine(vals) {
-    return vals.map(v => {
-      if (v === null || v === undefined) return '';
-      let s = typeof v === 'object' ? JSON.stringify(v) : String(v);
-      if (/[",\n\r]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
-      return s;
-    }).join(',');
-  }
-
-  function doExportRows() {
+  async function doExportRows() {
     const fmt = fmtSel.value;
-    let content = '', name = 'export_' + nowStamp();
-    if (fmt === 'csv') {
-      content = csvLine(fields.map(f => f.name)) + '\n' + rows.map(row => csvLine(fields.map(f => row[f.name]))).join('\n');
-      name += '.csv';
-    } else if (fmt === 'json') {
-      content = JSON.stringify(rows, null, 2);
-      name += '.json';
-    } else {
-      const esc = (v) => v === null || v === undefined ? 'NULL' : typeof v === 'number' ? String(v) : `'${String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
-      content = rows.map(row => `INSERT INTO table_name (${fields.map(f => '`' + f.name + '`').join(', ')}) VALUES (${fields.map(f => esc(row[f.name])).join(', ')});`).join('\n');
-      name += '.sql';
-    }
-    downloadBlob(name, content);
-    toast(t('exp.done', { n: rows.length, f: name }), 'ok');
     r.close();
+    let file = await window.wjds.pickSaveFile({
+      title: t('exp.title'),
+      defaultPath: suggestedName + '_' + nowStamp() + '.' + (fmt === 'xlsx' ? 'xlsx' : fmt),
+      filters: [{ name: fmt.toUpperCase(), extensions: [fmt === 'xlsx' ? 'xlsx' : fmt] }],
+    });
+    if (!file) return;
+    if (fmt !== 'xlsx' && !new RegExp('\\.' + fmt + '$', 'i').test(file)) file += '.' + fmt;
+    try {
+      let count;
+      if (fmt === 'sql') {
+        const esc = (v) => v === null || v === undefined ? 'NULL' : typeof v === 'number' ? String(v) : v instanceof Date ? `'${v.toISOString().slice(0, 19).replace('T', ' ')}'` : `'${String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+        const content = rows.map(row => `INSERT INTO table_name (${fields.map(f => '`' + f.name + '`').join(', ')}) VALUES (${fields.map(f => esc(row[f.name])).join(', ')});`).join('\n');
+        await window.wjds.writeFile(file, content);
+        count = rows.length;
+      } else {
+        ({ count } = await window.wjds.exportRows({ fields, rows, format: fmt, filePath: file, sheetName: 'Result' }));
+      }
+      toast(t('exp.done', { n: count, f: file }), 'ok');
+    } catch (err) {
+      toast(t('msg.error'), 'err', err.message);
+    }
   }
 }
 
 /* ================= EXPORT (server-side streamed to file) ================= */
 export function exportDialog(connId, { sql, db, table }) {
   const fmtSel = el('select', {},
+    el('option', { value: 'xlsx', text: 'Excel (.xlsx)' }),
     el('option', { value: 'csv', text: 'CSV' }),
     el('option', { value: 'json', text: 'JSON' }),
     el('option', { value: 'sql', text: 'SQL INSERTs (schema + data)' }));
   const fileInput = el('input', { type: 'text', style: { flex: '1' }, placeholder: 'output file' });
   const browse = el('button', { class: 'mini-btn', onclick: async () => {
-    const f = await window.wjds.pickFile({ title: t('exp.title'), filters: [{ name: 'Data', extensions: ['csv', 'json', 'sql'] }] });
+    const f = await window.wjds.pickFile({ title: t('exp.title'), filters: [{ name: 'Data', extensions: ['xlsx', 'csv', 'json', 'sql'] }] });
     if (f) fileInput.value = f;
   } }, ic('folder'), '…');
   const progress = el('div', { class: 'res-msg', style: { display: 'none' } });
@@ -185,7 +189,7 @@ export function exportDialog(connId, { sql, db, table }) {
     let file = fileInput.value.trim();
     if (!file) { toast('ระบุไฟล์ปลายทาง', 'err'); return; }
     const fmt = fmtSel.value;
-    if (!/\.(csv|json|sql)$/i.test(file)) file += '.' + fmt;
+    if (!/\.(xlsx|csv|json|sql)$/i.test(file)) file += '.' + (fmt === 'xlsx' ? 'xlsx' : fmt);
     r.close();
     try {
       const out = await window.wjds.exportToFile({ connId, sql, format: fmt, filePath: file, db, table, includeDdl: fmt === 'sql' });

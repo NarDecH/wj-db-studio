@@ -45,9 +45,12 @@ export const I18N = {
     'grid.refresh': 'Refresh', 'grid.null': 'NULL', 'grid.confirmsave': 'Apply {n} change(s)?',
     'grid.applied': 'Applied changes: +{i} ~{u} -{d}', 'grid.page': 'Page', 'grid.loading': 'Loading…',
     'grid.export': 'Export', 'grid.blob': '<binary {n} B>', 'grid.viewblob': 'View value',
+    'grid.preview': 'View value…', 'grid.text': 'Text (UTF-8)',
     'grid.colwidth': 'Column: ', 'grid.noresults': 'No rows', 'grid.error': 'Query error',
 
     'ed.execute': 'Execute (Ctrl+Enter)', 'ed.execSel': 'Execute Selection', 'ed.format': 'Format SQL',
+    'ed.open': 'Open SQL file (Ctrl+O)', 'ed.savefile': 'Save SQL file (Ctrl+S)',
+    'ed.opened': 'Opened {f}', 'ed.explain': 'Show execution plan', 'ed.analyze': 'EXPLAIN ANALYZE — actually runs the statement',
     'ed.saveSnippet': 'Save as Snippet', 'ed.newtab': 'New Tab', 'ed.tab': 'Query',
     'ed.running': 'Running…', 'ed.rowsaffected': '{r} row(s) affected', 'ed.empty': 'Type SQL here, press Ctrl+Enter to run.',
     'ed.autocommit': 'autocommit',
@@ -70,6 +73,7 @@ export const I18N = {
     'srv.dbsize': 'Total size of databases', 'srv.processlist': 'Process List', 'srv.kill': 'Kill',
     'srv.killquery': 'Kill Query', 'srv.vars': 'Variables', 'srv.status': 'Status',
     'srv.search': 'Search…', 'srv.confirmKill': 'Kill process {id}?',
+    'srv.autorefresh': 'Auto refresh (5s)',
 
     'usr.title': 'Users & Privileges', 'usr.new': 'Create User', 'usr.name': 'User', 'usr.host': 'Host',
     'usr.password': 'Password', 'usr.grants': 'Grants', 'usr.drop': 'Drop User', 'usr.setpass': 'Set Password',
@@ -152,9 +156,12 @@ export const I18N = {
     'grid.refresh': 'รีเฟรช', 'grid.null': 'NULL', 'grid.confirmsave': 'บันทึกการแก้ไข {n} รายการ?',
     'grid.applied': 'บันทึกแล้ว: เพิ่ม {i} แก้ {u} ลบ {d}', 'grid.page': 'หน้า', 'grid.loading': 'กำลังโหลด…',
     'grid.export': 'ส่งออก', 'grid.blob': '<ไบนารี {n} B>', 'grid.viewblob': 'ดูค่า',
+    'grid.preview': 'ดูค่า…', 'grid.text': 'ข้อความ (UTF-8)',
     'grid.noresults': 'ไม่มีข้อมูล', 'grid.error': 'ข้อผิดพลาดของคำสั่ง',
 
     'ed.execute': 'รันคำสั่ง (Ctrl+Enter)', 'ed.execSel': 'รันเฉพาะที่เลือก', 'ed.format': 'จัดรูปแบบ SQL',
+    'ed.open': 'เปิดไฟล์ SQL (Ctrl+O)', 'ed.savefile': 'บันทึกไฟล์ SQL (Ctrl+S)',
+    'ed.opened': 'เปิด {f} แล้ว', 'ed.explain': 'ดูแผนการประมวลผล', 'ed.analyze': 'EXPLAIN ANALYZE — รันคำสั่งจริง',
     'ed.saveSnippet': 'บันทึกเป็นตัวอย่าง SQL', 'ed.newtab': 'แท็บใหม่', 'ed.tab': 'คำสั่ง',
     'ed.running': 'กำลังรัน…', 'ed.rowsaffected': 'มีผล {r} แถว', 'ed.empty': 'พิมพ์ SQL แล้วกด Ctrl+Enter เพื่อรัน',
     'ed.autocommit': 'autocommit',
@@ -177,6 +184,7 @@ export const I18N = {
     'srv.dbsize': 'ขนาดฐานข้อมูลรวม', 'srv.processlist': 'Process List', 'srv.kill': 'Kill',
     'srv.killquery': 'Kill Query', 'srv.vars': 'ตัวแปรระบบ', 'srv.status': 'สถานะ',
     'srv.search': 'ค้นหา…', 'srv.confirmKill': 'Kill process {id}?',
+    'srv.autorefresh': 'รีเฟรชอัตโนมัติ (5 วิ)',
 
     'usr.title': 'ผู้ใช้และสิทธิ์', 'usr.new': 'สร้างผู้ใช้', 'usr.name': 'ผู้ใช้', 'usr.host': 'โฮสต์',
     'usr.password': 'รหัสผ่าน', 'usr.grants': 'สิทธิ์', 'usr.drop': 'ลบผู้ใช้', 'usr.setpass': 'ตั้งรหัสผ่าน',

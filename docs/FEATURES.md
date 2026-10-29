@@ -22,6 +22,8 @@ Complete capability map. Developed by **Weeradech Jessadarom**.
 - [x] Schema-aware autocomplete (Ctrl+Space + auto popup): keywords, functions, types, tables, columns
 - [x] Multi-statement execution with per-result tabs
 - [x] Execute selection only (Ctrl+Shift+Enter)
+- [x] **Open / save .sql files** (Ctrl+O / Ctrl+S)
+- [x] **EXPLAIN button + EXPLAIN ANALYZE** (flavor-aware: MariaDB `ANALYZE`, MySQL `EXPLAIN ANALYZE`)
 - [x] Line commenting (Ctrl+/), Tab indent
 - [x] Basic SQL formatter
 - [x] Result grids with sorting, export, row counts and timings
@@ -46,11 +48,18 @@ Complete capability map. Developed by **Weeradech Jessadarom**.
 
 ## Import / Export / Backup
 - [x] Import CSV/TSV (delimiters `,` `;` TAB `|`, headers toggle, truncate-first)
+- [x] Import Excel workbooks (**.xlsx/.xls**, SheetJS)
 - [x] Import JSON arrays
 - [x] Run `.sql` script files (statement splitter honoring strings/comments/DELIMITER)
-- [x] Export CSV / JSON / SQL INSERTs, **streamed** to disk (handles very large tables)
+- [x] Export **Excel (.xlsx** with auto column widths + DDL sheet**)**, CSV / JSON / SQL INSERTs,
+      streamed to disk (handles very large tables; xlsx guarded by cell-count limit)
 - [x] Batched INSERTs on import (300/batch) for speed
 - [x] mysqldump-style backup: schema + data + views, per-table or full database
+
+## Data viewing extras
+- [x] **BLOB/long-text value preview**: UTF-8 text, hex dump, automatic PNG/JPEG/GIF/WEBP image rendering
+- [x] Binary values shown as `<binary N B>` (localized), never blocking the grid
+- [x] Process list with optional 5-second auto-refresh
 
 ## Server administration
 - [x] Dashboard: version, flavor, uptime, connections, queries served, DB sizes

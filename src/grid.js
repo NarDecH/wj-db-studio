@@ -79,7 +79,8 @@ export class DataGrid {
           showContextMenu(e.clientX, e.clientY, [
             { label: t('msg.copied') + ' — cell', icon: 'copy', action: () => copyText(v === null ? 'NULL' : String(v)) },
             { label: 'Row (JSON)', icon: 'copy', action: () => copyText(JSON.stringify(row, null, 2)) },
-            ...(this.opts.onRowContext ? '-' : []),
+            { label: t('grid.preview'), icon: 'doc', action: () => (this.opts.onViewValue || ((ri, cn, vv) => valuePreviewDialog(vv, cn)))(i, f.name, v) },
+            ...(this.opts.onRowContext ? ['-'] : []),
           ]);
           if (this.opts.onRowContext) this.opts.onRowContext(e, i, row);
         });
@@ -98,10 +99,67 @@ export class DataGrid {
 
   fmt(v) {
     if (v === null || v === undefined) return 'NULL';
-    if (typeof v === 'object' && v.type === 'Buffer') return t('grid.blob', { n: v.length });
+    if (v instanceof Uint8Array || (v && v.type === 'Buffer')) return t('grid.blob', { n: v.length ?? (v.data && v.data.length) ?? 0 });
     if (typeof v === 'object' && v.toISOString) return v.toISOString().slice(0, 19).replace('T', ' ');
     return String(v);
   }
+}
+
+/* ---------- value preview (BLOB / long text / image) ---------- */
+export function valuePreviewDialog(value, colName) {
+  const bytes = value instanceof Uint8Array ? value
+    : (value && value.type === 'Buffer' && Array.isArray(value.data)) ? new Uint8Array(value.data) : null;
+  const isBin = !!bytes;
+  let text = '';
+  if (isBin) { try { text = new TextDecoder('utf-8', { fatal: false }).decode(bytes); } catch { text = ''; } }
+  else text = value === null || value === undefined ? '' : String(value);
+
+  // image sniffing by magic bytes
+  let imageMime = null;
+  if (isBin && bytes.length > 12) {
+    if (bytes[0] === 0x89 && bytes[1] === 0x50) imageMime = 'image/png';
+    else if (bytes[0] === 0xFF && bytes[1] === 0xD8) imageMime = 'image/jpeg';
+    else if (bytes[0] === 0x47 && bytes[1] === 0x49) imageMime = 'image/gif';
+    else if (bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42) imageMime = 'image/webp';
+  }
+  let hex = '';
+  if (isBin) {
+    const slice = bytes.slice(0, 4096);
+    for (let i = 0; i < slice.length; i += 16) {
+      hex += i.toString(16).padStart(8, '0') + '  '
+        + [...slice.slice(i, i + 16)].map(b => b.toString(16).padStart(2, '0')).join(' ').padEnd(47)
+        + '  ' + [...slice.slice(i, i + 16)].map(b => (b >= 32 && b < 127) ? String.fromCharCode(b) : '.').join('') + '\n';
+    }
+    if (bytes.length > 4096) hex += `… (+${bytes.length - 4096} bytes)`;
+  }
+  const long = !isBin && text.length > 5000 ? text.slice(0, 5000) + `\n… (+${text.length - 5000} chars)` : text;
+  const isLong = isBin || text.length > 2000;
+
+  const body = el('div', { class: 'ddl-wrap' });
+  const showModal2 = () => import('./utils.js').then(({ showModal }) => {
+    showModal({
+      title: `${colName} — ${isBin ? t('grid.blob', { n: bytes.length }) : text.length + ' chars'}`,
+      icon: 'doc', width: '760px', body,
+    });
+  });
+
+  if (imageMime) {
+    let b64 = '';
+    for (const b of bytes) b64 += String.fromCharCode(b);
+    body.append(el('div', { style: { textAlign: 'center', padding: '10px', background: 'var(--bg0)', borderRadius: '10px' } },
+      el('img', { src: 'data:' + imageMime + ';base64,' + btoa(b64), style: { maxWidth: '100%', maxHeight: '420px' } })));
+  }
+  if (!imageMime || isBin) {
+    body.append(el('div', { class: 'muted', style: { fontSize: '11px' }, text: t('grid.text') }),
+      el('div', { class: 'ddl-code', text: long || '—' }));
+  }
+  if (isBin) {
+    body.append(el('div', { class: 'muted', style: { fontSize: '11px', marginTop: '8px' }, text: 'HEX' }),
+      el('div', { class: 'ddl-code', text: hex || '—', style: { maxHeight: '160px' } }));
+  }
+  body.append(el('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: '8px' } },
+    el('button', { class: 'btn', onclick: async () => { await copyText(isBin ? '<binary>' : String(value ?? '')); toast(t('msg.copied'), 'ok'); } }, ic('copy'), 'Copy')));
+  showModal2();
 }
 
 /* ============================================================
@@ -179,7 +237,14 @@ async function buildDataView(tab, view, connId, db, table, isView) {
 
   const grid = new DataGrid(gridWrap, {
     onSort: (col, dir) => { orderBy = col; orderDir = dir; load(); },
-    onCellDblClick: (rowIdx, colName, value, td) => startCellEdit(rowIdx, colName, value, td),
+    onCellDblClick: (rowIdx, colName, value, td) => {
+      const col = cols.find(c => c.name === colName);
+      const isBin = value instanceof Uint8Array || (value && value.type === 'Buffer');
+      const isBigText = typeof value === 'string' && value.length > 20000;
+      if (isBin || isBigText || (col && /BLOB|TEXT|JSON|BINARY/i.test(col.type))) valuePreviewDialog(value, colName);
+      else startCellEdit(rowIdx, colName, value, td);
+    },
+    onViewValue: (ri, colName, v) => valuePreviewDialog(v, colName),
     onRowContext: (e, rowIdx, row) => rowMenu(e, rowIdx, row),
   });
 

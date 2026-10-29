@@ -168,6 +168,8 @@ function buildEditorView(tab, view, connId, db) {
   ta.addEventListener('scroll', () => { hl.scrollTop = ta.scrollTop; hl.scrollLeft = ta.scrollLeft; });
   ta.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); exec(e.shiftKey); }
+    else if (e.ctrlKey && (e.key === 'o' || e.key === 'O')) { e.preventDefault(); doOpenFile(); }
+    else if (e.ctrlKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); doSaveFile(); }
     else if (e.ctrlKey && e.key === ' ') { e.preventDefault(); autoComplete(true); }
     else if (e.key === 'Tab' && acPopupHidden()) { e.preventDefault(); insertAtCursor('  '); }
     else if (e.key === '/' && e.ctrlKey) {
@@ -320,20 +322,29 @@ function buildEditorView(tab, view, connId, db) {
   /* --- toolbar & layout --- */
   const runBtn = el('button', { class: 'mini-btn' }, ic('play'), el('span', { text: t('ed.execute') }));
   const runSelBtn = el('button', { class: 'mini-btn' }, ic('bolt'), el('span', { text: t('ed.execSel') }));
+  const explainBtn = el('button', { class: 'mini-btn', title: t('ed.explain') }, ic('chart'), el('span', { text: 'EXPLAIN' }));
+  const analyzeBtn = el('button', { class: 'mini-btn', title: t('ed.analyze') }, ic('bolt'), el('span', { text: 'ANALYZE' }));
+  const openBtn = el('button', { class: 'mini-btn', title: t('ed.open') }, ic('folder'));
+  const saveBtn = el('button', { class: 'mini-btn', title: t('ed.savefile') }, ic('save'));
   const fmtBtn = el('button', { class: 'mini-btn' }, ic('format'), el('span', { text: t('ed.format') }));
   const snippetBtn = el('button', { class: 'mini-btn' }, ic('bookmark'), el('span', { text: t('ed.saveSnippet') }));
   const clearBtn = el('button', { class: 'mini-btn icon-only', html: ic('x').innerHTML, title: 'Clear' });
 
   runBtn.addEventListener('click', () => exec(false));
   runSelBtn.addEventListener('click', () => exec(true));
+  explainBtn.addEventListener('click', () => runExplain(false));
+  analyzeBtn.addEventListener('click', () => runExplain(true));
+  openBtn.addEventListener('click', doOpenFile);
+  saveBtn.addEventListener('click', doSaveFile);
   fmtBtn.addEventListener('click', () => { ta.value = formatSQL(ta.value); sync(); });
   snippetBtn.addEventListener('click', () => snippetDialog({ sql: ta.value || ta.selectionStart !== ta.selectionEnd ? ta.value.slice(ta.selectionStart, ta.selectionEnd) || ta.value : ta.value }));
-  clearBtn.addEventListener('click', () => { ta.value = ''; sync(); });
+  clearBtn.addEventListener('click', () => { ta.value = ''; currentFile = ''; sync(); });
 
   const results = el('div', { class: 'results' });
   view.append(
     el('div', { class: 'sqlview' },
-      el('div', { class: 'ed-toolbar' }, runBtn, runSelBtn, el('span', { class: 'st-sep' }), fmtBtn, snippetBtn, el('span', { class: 'st-sep' }), clearBtn,
+      el('div', { class: 'ed-toolbar' }, runBtn, runSelBtn, el('span', { class: 'st-sep' }), explainBtn, analyzeBtn,
+        el('span', { class: 'st-sep' }), openBtn, saveBtn, fmtBtn, snippetBtn, el('span', { class: 'st-sep' }), clearBtn,
         el('span', { style: { flex: '1' } }),
         el('span', { class: 'muted', style: { fontSize: '11px' }, text: (db ? '🗄 ' + db : '') })),
       edWrap,
@@ -344,16 +355,41 @@ function buildEditorView(tab, view, connId, db) {
   tab.onClose = () => { closeAC(); };
 
   /* --- execution --- */
-  async function exec(selectionOnly) {
-    if (running) return;
+  function currentSQL(selectionOnly) {
     let sql = selectionOnly ? ta.value.slice(ta.selectionStart, ta.selectionEnd) : ta.value;
     if (!selectionOnly && ta.selectionStart !== ta.selectionEnd) sql = ta.value.slice(ta.selectionStart, ta.selectionEnd);
-    sql = sql.trim();
-    if (!sql) return;
+    return sql.trim();
+  }
+
+  function firstStatement(text) {
+    const s = text.replace(/;\s*$/, '');
+    const parts = s.split(';').map(x => x.trim()).filter(Boolean);
+    return parts[0] || s.trim();
+  }
+
+  async function exec(selectionOnly) {
+    const sql = currentSQL(selectionOnly);
+    if (sql) await executeSql(sql);
+  }
+
+  async function runExplain(analyze) {
+    let stmt = firstStatement(currentSQL(false));
+    if (!stmt) return;
+    if (/^EXPLAIN\b/i.test(stmt)) stmt = stmt.replace(/^EXPLAIN\s+(ANALYZE\s+)?/i, '');
+    if (/^ANALYZE\b/i.test(stmt)) stmt = stmt.replace(/^ANALYZE\s+/i, '');
+    // MariaDB: `ANALYZE stmt` — MySQL 8+: `EXPLAIN ANALYZE stmt`
+    const info = state.active.get(connId)?.info;
+    const isMaria = /mariadb/i.test(info?.flavor || '');
+    const prefix = analyze ? (isMaria ? 'ANALYZE ' : 'EXPLAIN ANALYZE ') : 'EXPLAIN ';
+    await executeSql(prefix + stmt, t('ed.explain'));
+  }
+
+  async function executeSql(sql, label) {
+    if (running) return;
     running = true;
     lastSQL = sql;
     runBtn.disabled = true;
-    runBtn.innerHTML = ic('clock').outerHTML + el('span', { text: t('ed.running') }).outerHTML;
+    runBtn.innerHTML = ic('clock').outerHTML + el('span', { text: (label || t('ed.execute')) + ' — ' + t('ed.running') }).outerHTML;
     results.innerHTML = '';
 
     try {
@@ -420,6 +456,36 @@ function buildEditorView(tab, view, connId, db) {
 
   function fmtRows(n) { return n + ' row' + (n === 1 ? '' : 's'); }
 
+  /* --- open / save .sql files --- */
+  let currentFile = '';
+
+  async function doOpenFile() {
+    const f = await window.wjds.pickFile({ title: t('ed.open'), filters: [{ name: 'SQL', extensions: ['sql', 'txt'] }, { name: 'All', extensions: ['*'] }] });
+    if (!f) return;
+    try {
+      const content = await window.wjds.readFile(f, 50);
+      ta.value = content;
+      currentFile = f;
+      sync();
+      toast(t('ed.opened', { f: f.split(/[\\/]/).pop() }), 'ok');
+    } catch (err) { toast(t('msg.error'), 'err', err.message); }
+  }
+
+  async function doSaveFile() {
+    let f = currentFile;
+    try {
+      if (!f) {
+        f = await window.wjds.pickSaveFile({ title: t('ed.savefile'), defaultPath: 'query.sql', filters: [{ name: 'SQL', extensions: ['sql'] }] });
+        if (!f) return;
+        if (!/\.sql$/i.test(f)) f += '.sql';
+      }
+      await window.wjds.writeFile(f, ta.value);
+      currentFile = f;
+      tab.setTitle(f.split(/[\\/]/).pop());
+      toast(t('msg.savedfile', { f }), 'ok');
+    } catch (err) { toast(t('msg.error'), 'err', err.message); }
+  }
+
   function setStatusTimeSafe(ms) {
     import('./app.js').then(m => m.setStatusTime(ms));
   }
@@ -427,7 +493,7 @@ function buildEditorView(tab, view, connId, db) {
   function exportSet(set) {
     import('./importer.js').then(m => {
       const rows = set.rows, fields = set.fields;
-      m.exportRowsDialog(fields, rows);
+      m.exportRowsDialog(fields, rows, 'result_' + (db || 'query'));
     });
   }
 

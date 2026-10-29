@@ -85,11 +85,20 @@ export function openProcessList() {
 async function buildProcView(tab, view, connId) {
   const root = el('div', { class: 'srv' });
   const refreshBtn = el('button', { class: 'btn', onclick: load }, ic('refresh'), el('span', { text: t('grid.refresh') }));
-  root.append(el('h2', {}, ic('monitor'), el('span', { text: t('srv.processlist') })), el('div', { class: 'tbl-toolbar' }, refreshBtn));
+  const autoChk = el('input', { type: 'checkbox', id: 'proc-auto' });
+  autoChk.addEventListener('change', () => {
+    clearInterval(tab._autoTimer);
+    tab._autoTimer = null;
+    if (autoChk.checked) tab._autoTimer = setInterval(load, 5000);
+  });
+  root.append(el('h2', {}, ic('monitor'), el('span', { text: t('srv.processlist') })),
+    el('div', { class: 'tbl-toolbar' }, refreshBtn,
+      el('label', { class: 'check' }, autoChk, el('span', { text: t('srv.autorefresh') }))));
   const wrap = el('div', {});
   root.append(wrap);
   view.append(root);
   tab.onRefresh = load;
+  tab.onClose = () => { clearInterval(tab._autoTimer); tab._autoTimer = null; };
 
   async function load() {
     wrap.innerHTML = '';

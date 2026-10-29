@@ -18,7 +18,11 @@ const api = {
   // dialogs & files
   pickFile: (opts) => invoke('dialog:pickFile')(opts),
   pickFolder: (opts) => invoke('dialog:pickFolder')(opts),
+  pickSaveFile: (opts) => invoke('dialog:pickSaveFile')(opts),
   showMessageBox: (opts) => invoke('dialog:messageBox')(opts),
+  readFile: (filePath, maxMB) => invoke('file:readText')(filePath, maxMB),
+  writeFile: (filePath, content) => invoke('file:writeText')(filePath, content),
+  exportRows: (args) => invoke('io:exportRows')(args),
 
   // store / settings
   getSettings: invoke('store:settings:get'),
@@ -75,6 +79,7 @@ const api = {
   exportToFile: (args) => invoke('io:exportToFile')(args),
   importCsv: (args) => invoke('io:importCsv')(args),
   importJson: (args) => invoke('io:importJson')(args),
+  importXlsx: (args) => invoke('io:importXlsx')(args),
   runSqlFile: (args) => invoke('io:runSqlFile')(args),
   backup: (args) => invoke('io:backup')(args),
 

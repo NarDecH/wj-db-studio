@@ -5,10 +5,12 @@
  */
 const { app, BrowserWindow, ipcMain, dialog, shell, nativeTheme, Menu } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const pkg = require('../package.json');
 const { Store } = require('./store');
 const { DBManager } = require('./db');
 const { SQLLog } = require('./sqllog');
+const { writeRowsXlsx, writeRowsPlain } = require('./xlsxio');
 const { setupUpdater } = require('./updater');
 const { buildMenu } = require('./appmenu');
 
@@ -96,6 +98,31 @@ function registerIpc() {
     });
     return r.response;
   });
+  ipcMain.handle('dialog:pickSaveFile', async (_e, opts) => {
+    const win = getMainWindow();
+    const r = await dialog.showSaveDialog(win, {
+      title: opts && opts.title,
+      defaultPath: opts && opts.defaultPath,
+      filters: (opts && opts.filters) || [],
+    });
+    return r.canceled ? null : r.filePath;
+  });
+
+  // ---- files (editor open/save, row exports) ----
+  ipcMain.handle('file:readText', (_e, filePath, maxMB = 50) => {
+    if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) throw new Error('File not found: ' + filePath);
+    if (fs.statSync(filePath).size > maxMB * 1024 * 1024) throw new Error(`File is larger than ${maxMB} MB`);
+    return fs.readFileSync(filePath, 'utf8');
+  });
+  ipcMain.handle('file:writeText', (_e, filePath, content) => {
+    fs.writeFileSync(filePath, content, 'utf8');
+    return true;
+  });
+  ipcMain.handle('io:exportRows', (_e, { fields, rows, format, filePath, sheetName }) => {
+    if (!Array.isArray(fields) || !Array.isArray(rows)) throw new Error('Invalid export payload');
+    if (format === 'xlsx') return { count: writeRowsXlsx(fields, rows, filePath, sheetName) };
+    return { count: writeRowsPlain(fields, rows, format, filePath) };
+  });
 
   // ---- store ----
   ipcMain.handle('store:settings:get', () => store.getSettings());
@@ -155,6 +182,7 @@ function registerIpc() {
   ipcMain.handle('io:exportToFile', (_e, args) => dbm.exportToFile(args.connId, args));
   ipcMain.handle('io:importCsv', (_e, args) => dbm.importCsv(args.connId, args));
   ipcMain.handle('io:importJson', (_e, args) => dbm.importJson(args.connId, args));
+  ipcMain.handle('io:importXlsx', (_e, args) => dbm.importXlsx(args.connId, args));
   ipcMain.handle('io:runSqlFile', (_e, args) => dbm.runSqlFile(args.connId, args));
   ipcMain.handle('io:backup', (_e, args) => dbm.backup(args.connId, args));
 
@@ -205,9 +233,17 @@ app.whenReady().then(() => {
         escId: DBManager.escId('a`b') === '`a``b`',
         csvParse: (() => { const { parseCsv } = require('./db'); return JSON.stringify(parseCsv('a,b\n"x,y",2')) === JSON.stringify([['a','b'],['x,y','2']]); })(),
         sqlSplit: (() => { const { splitSqlStatements } = require('./db'); return splitSqlStatements("SELECT 1; INSERT INTO t VALUES ('a;b');").length === 2; })(),
+        xlsx: (() => {
+          try {
+            const { writeRowsXlsx } = require('./xlsxio');
+            const p = path.join(app.getPath('temp'), 'wjds-selftest.xlsx');
+            const n = writeRowsXlsx([{ name: 'a' }, { name: 'b' }], [{ a: 1, b: 'x' }, { a: 2, b: 'y' }], p, 'T');
+            return n === 2 && fs.existsSync(p);
+          } catch { return false; }
+        })(),
         window: !!mainWindow,
       };
-      const ok = checks.store && checks.dbModule && checks.escId && checks.csvParse && checks.sqlSplit && checks.window;
+      const ok = checks.store && checks.dbModule && checks.escId && checks.csvParse && checks.sqlSplit && checks.window && checks.xlsx;
       checks.ok = ok;
       // Verify the renderer booted (home view rendered) when possible
       try {

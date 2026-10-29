@@ -583,6 +583,40 @@ class DBManager {
   // ================= export (streamed) =================
 
   async exportToFile(connId, { sql, format, filePath, db, table, includeDdl, batchSize = 400 }) {
+    // xlsx: build in memory (guarded), everything else streams
+    if (format === 'xlsx') {
+      const { writeRowsXlsx } = require('./xlsxio');
+      const pool = this.pool(connId);
+      const conn = await pool.getConnection();
+      try {
+        const query = conn.connection.query({ sql });
+        const stream = query.stream();
+        const rows = [];
+        let count = 0, fields = null;
+        for await (const row of stream) {
+          count++;
+          if (!fields) fields = Object.keys(row);
+          rows.push(row);
+        }
+        if (db && table && includeDdl !== false) {
+          // prepend DDL as a second sheet
+          const ddl = await this.tableDDL(connId, db, table);
+          const XLSX = require('xlsx');
+          const wb = XLSX.utils.book_new();
+          writeRowsXlsx(fields.map(n => ({ name: n })), rows, filePath, table || 'Data');
+          // append DDL sheet
+          const wb2 = XLSX.readFile(filePath);
+          const ws = XLSX.utils.aoa_to_sheet(ddl.split('\n').map(l => [l]));
+          XLSX.utils.book_append_sheet(wb2, ws, 'DDL');
+          XLSX.writeFile(wb2, filePath);
+        } else {
+          writeRowsXlsx((fields || []).map(n => ({ name: n })), rows, filePath, table || 'Data');
+        }
+        this._log('io', connId, `-- EXPORT xlsx${db && table ? ' ' + db + '.' + table : ''} (${count} rows) -> ${filePath}`, null, count, true, null, db);
+        return { count, format, filePath };
+      } finally { conn.release(); }
+    }
+
     const pool = this.pool(connId);
     const conn = await pool.getConnection();
     let count = 0;
@@ -671,8 +705,7 @@ class DBManager {
     return { count, columns: header };
   }
 
-  async importJson(connId, { filePath, db, table, truncateFirst = false, batchSize = 300 }) {
-    const arr = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  async importJson(connId, { filePath, db, table, truncateFirst = false, batchSize = 300 }) {    const arr = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     const rows = Array.isArray(arr) ? arr : [arr];
     if (!rows.length) return { count: 0 };
     const header = [...new Set(rows.flatMap(r => Object.keys(r)))];
@@ -689,9 +722,30 @@ class DBManager {
     return { count, columns: header };
   }
 
+  /** Import an Excel workbook sheet (.xlsx/.xls) into a table. */
+  async importXlsx(connId, { filePath, db, table, sheetIndex = 0, truncateFirst = false, batchSize = 300 }) {
+    const { readXlsx } = require('./xlsxio');
+    const { sheet, header, rows } = readXlsx(filePath, sheetIndex);
+    if (!rows.length) return { count: 0, sheet };
+    if (truncateFirst) await this.exec(connId, 'TRUNCATE TABLE ' + DBManager.qRef(db, table), { db });
+    const cols = header.map(DBManager.escId).join(', ');
+    const base = 'INSERT INTO ' + DBManager.qRef(db, table) + ' (' + cols + ') VALUES ';
+    let count = 0;
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const chunk = rows.slice(i, i + batchSize);
+      const values = chunk.map(r => '(' + header.map((_, j) => {
+        const v = r[j];
+        return v instanceof Date ? DBManager.escValue(v) : DBManager.escValue(v === undefined ? null : v);
+      }).join(', ') + ')').join(',\n');
+      await this.exec(connId, base + '\n' + values, { db });
+      count += chunk.length;
+    }
+    this._log('io', connId, `-- IMPORT XLSX ${filePath} [${sheet}] -> ${db}.${table} (${count} rows)`, null, count, true, null, db);
+    return { count, sheet, columns: header };
+  }
+
   /** Execute a .sql script file (split on ; at line ends, respecting strings). */
-  async runSqlFile(connId, { filePath, onProgress }) {
-    const raw = fs.readFileSync(filePath, 'utf8');
+  async runSqlFile(connId, { filePath, onProgress }) {    const raw = fs.readFileSync(filePath, 'utf8');
     const statements = splitSqlStatements(raw);
     let done = 0, errors = 0;
     for (const stmt of statements) {

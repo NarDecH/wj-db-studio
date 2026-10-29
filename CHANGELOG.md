@@ -12,6 +12,14 @@ Tested against a real **MariaDB 10.11** server (localhost): connection dialog wi
 object explorer (7 databases), table data grid with Thai `utf8mb4` content, JOIN query with
 syntax highlighting and autocomplete — all passing (8/8 automated checks).
 
+### Added during 1.0 hardening
+- **SQL Log**: full statement audit (daily JSONL files + in-app viewer with filters)
+- **Open/save .sql files** in the SQL editor (Ctrl+O / Ctrl+S)
+- **EXPLAIN / EXPLAIN ANALYZE** buttons (flavor-aware: MariaDB `ANALYZE`, MySQL `EXPLAIN ANALYZE`)
+- **Excel export (.xlsx)** with auto column widths + DDL sheet, and **Excel import (.xlsx/.xls)**
+- **BLOB preview**: text / hex dump / automatic image rendering (PNG/JPEG/GIF/WEBP)
+- **Process list auto-refresh** (5s toggle)
+
 ### Added
 - Connection manager: MySQL & MariaDB, SSL/TLS (+CA), SSH tunnels, test-before-save, groups
 - Object explorer: databases, tables, views, procedures, functions, triggers, events

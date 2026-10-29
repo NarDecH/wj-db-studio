@@ -23,7 +23,8 @@
   "dependencies": {
     "electron-updater": "^6.3.9",
     "mysql2": "^3.15.3",
-    "ssh2": "^1.17.0"
+    "ssh2": "^1.17.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "electron": "^33.4.11",
@@ -44,8 +45,18 @@
     ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "build/icon.png"
     },
@@ -60,12 +71,22 @@
       "artifactName": "WJ-DB-Studio-${version}-Portable.exe"
     },
     "linux": {
-      "target": ["AppImage"],
+      "target": [
+        "AppImage"
+      ],
       "icon": "build/icon.png",
       "category": "Development"
     },
     "mac": {
-      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
       "icon": "build/icon.png",
       "category": "public.app-category.developer-tools"
     },
