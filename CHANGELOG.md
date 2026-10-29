@@ -3,7 +3,17 @@
 All notable changes to WJ DB Studio are documented here.
 Developed by **Weeradech Jessadarom**.
 
-## [1.0.0] — 2026-10-29
+## [1.2.0] — 2026-10-30
+
+### Added
+- **Schema Compare** (Tools menu): diff two databases (tables/columns/indexes)
+  with a readable report and generated ALTER/CREATE migration SQL (optional DROPs),
+  copy or save as .sql
+- **Connections export/import** as JSON — passwords excluded by design
+- **SSL certificate verification option** per connection (rejectUnauthorized)
+- **Warning before UPDATE/DELETE without WHERE** (SQL editor)
+
+## [1.1.0] — 2026-10-30
 
 First public release 🎉
 
