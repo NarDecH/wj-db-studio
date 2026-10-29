@@ -228,6 +228,7 @@ function buildEditorView(tab, view, connId, db) {
   const runSelBtn = el('button', { class: 'mini-btn' }, ic('bolt'), el('span', { text: t('ed.execSel') }));
   const explainBtn = el('button', { class: 'mini-btn', title: t('ed.explain') }, ic('chart'), el('span', { text: 'EXPLAIN' }));
   const analyzeBtn = el('button', { class: 'mini-btn', title: t('ed.analyze') }, ic('bolt'), el('span', { text: 'ANALYZE' }));
+  const profileBtn = el('button', { class: 'mini-btn', title: t('ed.profile') }, ic('clock'), el('span', { text: 'PROFILE' }));
   const openBtn = el('button', { class: 'mini-btn', title: t('ed.open') }, ic('folder'));
   const saveBtn = el('button', { class: 'mini-btn', title: t('ed.savefile') }, ic('save'));
   const fmtBtn = el('button', { class: 'mini-btn' }, ic('format'), el('span', { text: t('ed.format') }));
@@ -238,6 +239,7 @@ function buildEditorView(tab, view, connId, db) {
   runSelBtn.addEventListener('click', () => exec(true));
   explainBtn.addEventListener('click', () => runExplain(false));
   analyzeBtn.addEventListener('click', () => runExplain(true));
+  profileBtn.addEventListener('click', runProfile);
   openBtn.addEventListener('click', doOpenFile);
   saveBtn.addEventListener('click', doSaveFile);
   fmtBtn.addEventListener('click', () => { ta.value = formatSQL(ta.value); sync(); });
@@ -247,7 +249,7 @@ function buildEditorView(tab, view, connId, db) {
   const results = el('div', { class: 'results' });
   view.append(
     el('div', { class: 'sqlview' },
-      el('div', { class: 'ed-toolbar' }, runBtn, runSelBtn, el('span', { class: 'st-sep' }), explainBtn, analyzeBtn,
+      el('div', { class: 'ed-toolbar' }, runBtn, runSelBtn, el('span', { class: 'st-sep' }), explainBtn, analyzeBtn, profileBtn,
         el('span', { class: 'st-sep' }), openBtn, saveBtn, fmtBtn, snippetBtn, el('span', { class: 'st-sep' }), clearBtn,
         el('span', { style: { flex: '1' } }),
         el('span', { class: 'muted', style: { fontSize: '11px' }, text: (db ? '🗄 ' + db : '') })),
@@ -286,6 +288,53 @@ function buildEditorView(tab, view, connId, db) {
     const isMaria = /mariadb/i.test(info?.flavor || '');
     const prefix = analyze ? (isMaria ? 'ANALYZE ' : 'EXPLAIN ANALYZE ') : 'EXPLAIN ';
     await executeSql(prefix + stmt, t('ed.explain'));
+  }
+
+  /** Full profiler report: EXPLAIN ANALYZE + EXPLAIN + server counter deltas. */
+  async function runProfile() {
+    let stmt = firstStatement(currentSQL(false));
+    if (!stmt) return;
+    stmt = stmt.replace(/^\s*(EXPLAIN\s+(ANALYZE\s+)?|ANALYZE\s+)/i, '');
+    const showModal2 = () => import('./utils.js').then(u => u.showModal);
+    const isMaria = /mariadb/i.test(state.active.get(connId)?.info?.flavor || '');
+    const anaPrefix = isMaria ? 'ANALYZE ' : 'EXPLAIN ANALYZE ';
+    try {
+      const sB = await window.wjds.variables(connId, 'status', '');
+      const before = Object.fromEntries(sB.map(x => [x.name, Number(x.value)]));
+      const wallStart = Date.now();
+      const ana = await window.wjds.dbQuery(connId, anaPrefix + stmt, null, { timeoutSec: state.settings.queryTimeout });
+      const wallMs = Date.now() - wallStart;
+      const sA = await window.wjds.variables(connId, 'status', '');
+      const after = Object.fromEntries(sA.map(x => [x.name, Number(x.value)]));
+      const exp = await window.wjds.dbQuery(connId, 'EXPLAIN ' + stmt, null, { timeoutSec: state.settings.queryTimeout });
+
+      const counters = ['Questions', 'Handler_read_next', 'Handler_read_rnd_next', 'Handler_write', 'Sort_rows', 'Created_tmp_tables', 'Select_scan'];
+      const counterRows = counters.filter(k => (after[k] ?? 0) !== (before[k] ?? 0))
+        .map(k => ({ name: k, delta: (after[k] ?? 0) - (before[k] ?? 0) }));
+
+      const fmtTable = (fields, rows) => {
+        const head = fields.map(f => f.name).join(' | ');
+        return head + '\n' + '-'.repeat(Math.min(head.length, 120)) + '\n' +
+          rows.map(r => fields.map(f => String(r[f.name] ?? '')).join(' | ')).join('\n');
+      };
+
+      const body = el('div', {},
+        el('div', { style: { display: 'flex', gap: '14px', marginBottom: '10px', flexWrap: 'wrap' } },
+          el('div', { class: 'stat' }, el('div', { class: 'k', text: t('ed.walltime') }), el('div', { class: 'v', text: wallMs + ' ms' }))),
+        el('div', { class: 'muted', style: { fontSize: '11px' }, text: anaPrefix.trim() }),
+        el('div', { class: 'ddl-code', style: { maxHeight: '200px' }, text: fmtTable(ana.results[0].fields, ana.results[0].rows) }),
+        el('div', { class: 'muted', style: { fontSize: '11px', marginTop: '8px' }, text: 'EXPLAIN' }),
+        el('div', { class: 'ddl-code', style: { maxHeight: '180px' }, text: fmtTable(exp.results[0].fields, exp.results[0].rows) }),
+        el('div', { class: 'muted', style: { fontSize: '11px', marginTop: '8px' }, text: t('ed.counters') }),
+        el('table', { class: 'var-table' },
+          counterRows.map(c => el('tr', {}, el('td', { text: c.name }), el('td', { text: '+' + c.delta.toLocaleString() })))));
+      (await showModal2())({ title: t('ed.profile') + ' — ' + stmt.slice(0, 60), icon: 'clock', width: '880px', body });
+      pushHistory('PROFILE ' + stmt, true, wallMs);
+    } catch (err) {
+      const ex = explainError(err);
+      logResult('✗ ' + ex.msg, false, ex.hint);
+      toast(t('msg.error'), 'err', ex.msg);
+    }
   }
 
   async function executeSql(sql, label) {
