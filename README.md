@@ -68,6 +68,7 @@ Full list in-app: **Help → Keyboard Shortcuts**.
 - [คู่มือผู้ใช้ (ภาษาไทย)](docs/USER_GUIDE.th.md)
 - [User Guide (English)](docs/USER_GUIDE.en.md)
 - [Feature list](docs/FEATURES.md)
+- [Roadmap](docs/ROADMAP.md)
 - [Building from source](docs/BUILD.md)
 - [Security notes](docs/SECURITY.md)
 - [Changelog](CHANGELOG.md)
