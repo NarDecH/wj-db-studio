@@ -32,7 +32,7 @@ eq('backtick string', splitSqlStatements('SELECT `a;b` FROM t;'), ['SELECT `a;b`
 console.log('DBManager.escId / escValue');
 eq('escId', DBManager.escId('a`b'), '`a``b`');
 eq('escId thai', DBManager.escId('ชื่อ'), '`ชื่อ`');
-eq('escValue string', DBManager.escValue("O'Brien"), "'O''Brien'");
+eq('escValue string', DBManager.escValue("O'Brien"), "'O\\'Brien'"); // MySQL backslash escaping (valid with default sql_mode)
 eq('escValue backslash', DBManager.escValue('a\\b'), "'a\\\\b'");
 eq('escValue null', DBManager.escValue(null), 'NULL');
 eq('escValue number', DBManager.escValue(42), '42');
@@ -74,7 +74,7 @@ eq('changed kinds', d.changed[0].details.map(x => x.kind), ['col-add', 'ix-add']
 console.log('highlightSQL');
 (async () => {
   const { highlightSQL } = await import('../src/highlight.js');
-  const html = highlightSQL('SELECT name FROM `t` WHERE id=1 -- c');
+  const html = highlightSQL("SELECT name FROM `t` WHERE id=1 AND s='hi' -- c");
   ok('keyword colored', html.includes('tk-kw'));
   ok('string colored', html.includes('tk-str'));
   ok('backtick colored', html.includes('tk-bt'));
