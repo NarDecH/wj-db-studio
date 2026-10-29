@@ -19,6 +19,17 @@ syntax highlighting and autocomplete — all passing (8/8 automated checks).
 - **Excel export (.xlsx)** with auto column widths + DDL sheet, and **Excel import (.xlsx/.xls)**
 - **BLOB preview**: text / hex dump / automatic image rendering (PNG/JPEG/GIF/WEBP)
 - **Process list auto-refresh** (5s toggle)
+- **ER Diagram** (read-only SVG: tables with columns + FK relationship lines, zoomable)
+- **Find in database**: search a value across all tables at once
+- **Auto-create table on import** with column-type inference (INT/DECIMAL/DATE/DATETIME/VARCHAR/TEXT)
+- **Multi-row grid selection** (Ctrl/Shift) with bulk delete + copy as JSON/CSV/INSERT
+- **Value editors by column type**: ENUM dropdown, DATE / DATETIME pickers
+- **Read-only connection mode** (main-process enforced; DML/DDL rejected)
+- **Keep-alive + auto-reconnect** with disconnect notification
+- **Live server chart** (queries/sec + connections, 2s sampling)
+- **Resizable columns with persisted widths**, **Ctrl+F** filter focus
+- **Session restore**: last tabs + connection reopen on launch
+- Rename table via right-click, duplicate connection, database-level GRANT editor
 
 ### Added
 - Connection manager: MySQL & MariaDB, SSL/TLS (+CA), SSH tunnels, test-before-save, groups

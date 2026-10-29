@@ -359,8 +359,16 @@ class DBManager {
     return row ? (row['Create Table'] || row['Create View'] || '') : '';
   }
 
-  async tableStats(connId, db, table) {
+  /** Foreign keys across a database (for ER diagram). */
+  async listForeignKeys(connId, db) {
     const r = await this.query(connId,
+      "SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME, CONSTRAINT_NAME " +
+      "FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA=? AND REFERENCED_TABLE_NAME IS NOT NULL " +
+      "ORDER BY TABLE_NAME", [db], { timeoutSec: 15 });
+    return r.results[0].rows;
+  }
+
+  async tableStats(connId, db, table) {    const r = await this.query(connId,
       "SELECT ENGINE, TABLE_ROWS, DATA_LENGTH, INDEX_LENGTH, DATA_FREE, TABLE_COLLATION, CREATE_TIME, UPDATE_TIME, TABLE_COMMENT " +
       "FROM information_schema.TABLES WHERE TABLE_SCHEMA=? AND TABLE_NAME=?", [db, table], { timeoutSec: 15 });
     const x = r.results[0].rows[0] || {};
@@ -573,7 +581,7 @@ class DBManager {
         if (!conds.length) continue;
         const r = await this.query(connId,
           `SELECT * FROM ${DBManager.qRef(db, t.name)} WHERE ${conds.join(' OR ')} LIMIT ${limitPerTable}`,
-          conds.map(() => term), { db, timeoutSec: 10 });
+          conds.map(() => '%' + term + '%'), { db, timeoutSec: 10 });
         if (r.results[0].rows.length) {
           out.push({ table: t.name, rows: r.results[0].rows.slice(0, limitPerTable), fields: r.results[0].fields.map(f => f.name) });
         }
@@ -847,7 +855,10 @@ class DBManager {
   /** Import an Excel workbook sheet (.xlsx/.xls) into a table. */
   async importXlsx(connId, { filePath, db, table, sheetIndex = 0, truncateFirst = false, batchSize = 300, createTable = false }) {
     const { readXlsx } = require('./xlsxio');
-    const { sheet, header, rows } = readXlsx(filePath, sheetIndex);
+    const parsed = readXlsx(filePath, sheetIndex);
+    const sheet = parsed.sheet;
+    const rows = parsed.rows;
+    let header = parsed.header;
     if (!rows.length) return { count: 0, sheet };
     if (createTable) {
       await this._autoCreateTable(connId, db, table, header, rows.slice(0, 200));

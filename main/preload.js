@@ -58,6 +58,7 @@ const api = {
   tableIndexes: (connId, db, table) => invoke('db:tableIndexes')(connId, db, table),
   tableDDL: (connId, db, table) => invoke('db:tableDDL')(connId, db, table),
   tableStats: (connId, db, table) => invoke('db:tableStats')(connId, db, table),
+  listForeignKeys: (connId, db) => invoke('db:listForeignKeys')(connId, db),
   primaryKeys: (connId, db, table) => invoke('db:primaryKeys')(connId, db, table),
   selectPage: (args) => invoke('db:selectPage')(args),
   applyChanges: (args) => invoke('db:applyChanges')(args),

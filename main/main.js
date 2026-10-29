@@ -161,6 +161,7 @@ function registerIpc() {
   ipcMain.handle('db:tableIndexes', (_e, id, db, t) => dbm.tableIndexes(id, db, t));
   ipcMain.handle('db:tableDDL', (_e, id, db, t) => dbm.tableDDL(id, db, t));
   ipcMain.handle('db:tableStats', (_e, id, db, t) => dbm.tableStats(id, db, t));
+  ipcMain.handle('db:listForeignKeys', (_e, id, db) => dbm.listForeignKeys(id, db));
   ipcMain.handle('db:primaryKeys', (_e, id, db, t) => dbm.primaryKeys(id, db, t));
   ipcMain.handle('db:selectPage', (_e, args) => dbm.selectPage(args.connId, args));
   ipcMain.handle('db:applyChanges', (_e, args) => dbm.applyChanges(args.connId, args));

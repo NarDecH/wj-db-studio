@@ -117,6 +117,7 @@ export const I18N = {
     'msg.needconn': 'Connect to a server first', 'msg.savedfile': 'Saved: {f}',
     'msg.error': 'Error', 'msg.running': 'Working…',
     'menu.closeTab': 'Close tab', 'menu.sessionrestored': 'Previous session restored',
+    'er.title': 'ER Diagram',
   },
 
   th: {
@@ -233,6 +234,7 @@ export const I18N = {
     'msg.needconn': 'กรุณาเชื่อมต่อเซิร์ฟเวอร์ก่อน', 'msg.savedfile': 'บันทึกที่: {f}',
     'msg.error': 'ข้อผิดพลาด', 'msg.running': 'กำลังทำงาน…',
     'menu.closeTab': 'ปิดแท็บ', 'menu.sessionrestored': 'กู้คืนหน้าจอครั้งก่อนแล้ว',
+    'er.title': 'แผนผังความสัมพันธ์ (ER)',
   },
 };
 

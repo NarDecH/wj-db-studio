@@ -3,6 +3,11 @@
 > วิเคราะห์เมื่อ 2026-10-30 เทียบกับ HeidiSQL, DBeaver, TablePlus, Beekeeper Studio
 > + ตรวจโค้ดจริงหาฟีเจอร์ที่ทำค้างไว้ โดย Weeradech Jessadarom
 
+> ✅ **อัปเดต: ชุด A + B + C1 + C3 + C4 ทำเสร็จแล้วทั้งหมด** (ER diagram, find in
+> database, auto-create table, multi-row, value editors, read-only, keep-alive,
+> QPS chart, session restore, resizable columns, rename, theme toggle, db-grants)
+> — งานที่เหลือคือชุด C ตัวใหญ่ตัวที่เหลือด้านล่าง
+
 ## สถานะปัจจุบัน (ที่มีแล้ว)
 
 เชื่อมต่อ (SSL/SSH tunnel/กลุ่ม), สำรวจออบเจกต์ครบ 6 ชนิด, SQL editor

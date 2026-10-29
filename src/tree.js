@@ -220,6 +220,7 @@ function renderDb(meta, cs, db, isCurrent) {
     oncontextmenu: (e) => {
       e.preventDefault();
       showContextMenu(e.clientX, e.clientY, [
+        { label: t('er.title'), icon: 'chart', action: () => import('./erdiagram.js').then(m => m.openERDiagram({ connId: meta.id, db: db.name })) },
         { label: t('ctx.query'), icon: 'code', action: () => import('./editor.js').then(m => m.openEditor({ connId: meta.id, db: db.name })) },
         { label: t('ctx.import'), icon: 'import', action: () => import('./importer.js').then(m => m.importDialog(meta.id, db.name)) },
         { label: t('ctx.export'), icon: 'export', action: () => import('./importer.js').then(m => m.backupDialog(meta.id, db.name)) },
