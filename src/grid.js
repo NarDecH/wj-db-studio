@@ -98,7 +98,7 @@ export class DataGrid {
 
   fmt(v) {
     if (v === null || v === undefined) return 'NULL';
-    if (Buffer && v && v.type === 'Buffer') return t('grid.blob', { n: v.length });
+    if (typeof v === 'object' && v.type === 'Buffer') return t('grid.blob', { n: v.length });
     if (typeof v === 'object' && v.toISOString) return v.toISOString().slice(0, 19).replace('T', ' ');
     return String(v);
   }

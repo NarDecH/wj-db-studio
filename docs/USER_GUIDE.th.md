@@ -13,7 +13,7 @@
 | `WJ DB Studio Setup x.y.z.exe` | ติดตั้งถาวรพร้อม shortcut บนเดสก์ท็อป |
 
 ข้อมูลการตั้งค่าและการเชื่อมต่อทั้งหมดเก็บที่:
-`%APPDATA%\wj-db-studio\config.json` (โปรแกรม portable ก็ใช้ตำแหน่งนี้เช่นกัน)
+`%APPDATA%\WJ DB Studio\config.json` (โปรแกรม portable ก็ใช้ตำแหน่งนี้เช่นกัน)
 
 ## 2. เชื่อมต่อฐานข้อมูล
 

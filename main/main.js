@@ -127,7 +127,7 @@ function registerIpc() {
   ipcMain.handle('db:tableDDL', (_e, id, db, t) => dbm.tableDDL(id, db, t));
   ipcMain.handle('db:tableStats', (_e, id, db, t) => dbm.tableStats(id, db, t));
   ipcMain.handle('db:primaryKeys', (_e, id, db, t) => dbm.primaryKeys(id, db, t));
-  ipcMain.handle('db:selectPage', (_e, args) => dbm.selectPage(id0(args.connId), args));
+  ipcMain.handle('db:selectPage', (_e, args) => dbm.selectPage(args.connId, args));
   ipcMain.handle('db:applyChanges', (_e, args) => dbm.applyChanges(args.connId, args));
   ipcMain.handle('db:dropObject', (_e, args) => dbm.dropObject(args.connId, args));
   ipcMain.handle('db:truncateTable', (_e, args) => dbm.truncateTable(args.connId, args));
@@ -155,8 +155,6 @@ function registerIpc() {
   // ---- updates ----
   setupUpdater({ app, BrowserWindow, getMainWindow, store });
 }
-
-function id0(args) { return args.connId; }
 
 function openAbout() {
   const win = getMainWindow();

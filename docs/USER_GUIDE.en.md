@@ -13,7 +13,7 @@ No setup required. Grab a file from [Releases](https://github.com/weeradech/wj-d
 | `WJ-DB-Studio-x.y.z-Portable.exe` | Run immediately, no install (works from a USB stick) |
 | `WJ DB Studio Setup x.y.z.exe` | Permanent install with desktop shortcut |
 
-Settings and connections are stored in `%APPDATA%\wj-db-studio\config.json`.
+Settings and connections are stored in `%APPDATA%\WJ DB Studio\config.json`.
 
 ## 2. Connecting
 

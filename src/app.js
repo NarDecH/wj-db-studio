@@ -35,6 +35,7 @@ export function openTab(def) {
   const viewEl = el('div', { class: 'view' });
   const tab = {
     id, type: def.type, key, payload: def.payload || {}, viewEl,
+    title: def.title,
     setTitle: (s) => { labelEl.textContent = s; tab.title = s; },
     setTitleNode: (node) => { labelEl.innerHTML = ''; labelEl.append(node); },
   };

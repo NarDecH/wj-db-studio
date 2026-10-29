@@ -6,7 +6,7 @@ Developed by **Weeradech Jessadarom**.
 
 | Data | Where | Protection |
 |---|---|---|
-| Settings, snippets, query history | `%APPDATA%\wj-db-studio\config.json` | plain JSON (no secrets inside) |
+| Settings, snippets, query history | `%APPDATA%\WJ DB Studio\config.json` | plain JSON (no secrets inside) |
 | Database passwords | same file, `passwordEnc` field | **OS-encrypted** via Electron `safeStorage` (Windows: DPAPI tied to the user account; macOS: Keychain; Linux: libsecret) |
 | SSH passwords | same file, `ssh.passwordEnc` | same encryption |
 

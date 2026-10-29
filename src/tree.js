@@ -3,7 +3,7 @@
  * Connections > Databases > (Tables, Views, Procedures, Functions, Triggers, Events)
  * (c) 2026 Weeradech Jessadarom — MIT
  */
-import { $, el, ic, toast, showContextMenu, confirmBox } from './utils.js';
+import { $, $$, el, ic, toast, showContextMenu, confirmBox } from './utils.js';
 import { t } from './i18n.js';
 import { state, connMeta } from './state.js';
 import { openConnectionDialog } from './connections.js';
@@ -109,7 +109,9 @@ async function toggleConn(meta, row, kids) {
     try {
       const info = await window.wjds.dbConnect(meta.id);
       if (info.ok) {
-        cs.connected = true; cs.err = false; cs.dbs = null;
+        cs.connected = true; cs.err = false;
+        try { cs.dbs = await window.wjds.listDatabases(meta.id); }
+        catch { cs.dbs = []; }
         hooks.onConnectStatus(meta.id, info.info);
         toast(t('msg.connected', { name: meta.name }), 'ok');
       } else {
@@ -123,22 +125,26 @@ async function toggleConn(meta, row, kids) {
     }
     cs.connecting = false;
     renderTree();
-  } else {
-    // collapse / disconnect on chevron only — dblclick disconnects
-    cs.connected = false;
-    await window.wjds.dbDisconnect(meta.id);
-    hooks.onConnectStatus(meta.id, null);
-    renderTree();
   }
+  // When connected: clicking again does NOT disconnect —
+  // use the context menu ("ตัดการเชื่อมต่อ") to disconnect.
 }
 
 function connMenu(e, meta) {
   const cs = connState.get(meta.id);
   const items = [];
   if (!cs.connected) {
-    items.push({ label: t('tree.connecting').replace('…', ''), icon: 'connect', action: () => { const cs2 = connState.get(meta.id); cs2.connecting = false; toggleConn(meta); } });
+    items.push({ label: t('ctx.query') + ' (' + t('tb.newconn') + ')', icon: 'connect', action: () => { const cs2 = connState.get(meta.id); cs2.connecting = false; toggleConn(meta); } });
   } else {
     items.push({ label: t('ctx.refresh'), icon: 'refresh', action: () => { cs.dbs = null; renderTree(); } });
+    items.push({
+      label: t('ctx.disconnect'), icon: 'disconnect', action: async () => {
+        await window.wjds.dbDisconnect(meta.id);
+        cs.connected = false; cs.dbs = null; cs.expandedDbs = new Set();
+        hooks.onConnectStatus(meta.id, null);
+        renderTree();
+      },
+    });
   }
   items.push('-');
   items.push({ label: t('conn.edit'), icon: 'edit', action: () => openConnectionDialog({ conn: meta, onSaved: () => renderTree() }) });
@@ -181,13 +187,14 @@ async function renderDbList(meta, cs, kids) {
 
 function renderDb(meta, cs, db, isCurrent) {
   const expanded = (cs.expandedDbs ||= new Set()).has(db.name);
+  const chev = el('span', { class: 'chev' + (expanded ? ' open' : ''), html: ic('chevron-right').innerHTML });
   const row = el('div', {
     class: 'trow' + (isCurrent ? ' selected' : ''),
     onmousedown: () => selectRow(row),
     onclick: (e) => {
       selectRow(row);
       hooks.onDbChange(meta.id, db.name);
-      if (e.target.closest('.chev') || e.detail === 2) toggleDb();
+      toggleDb(); // single click toggles expand/collapse (like DBeaver)
     },
     oncontextmenu: (e) => {
       e.preventDefault();
@@ -210,7 +217,7 @@ function renderDb(meta, cs, db, isCurrent) {
       ]);
     },
   },
-    el('span', { class: 'chev' + (expanded ? ' open' : ''), html: ic('chevron-right').innerHTML }),
+    chev,
     ic('database', 'ticon ic-db'),
     el('span', { class: 'tlabel', text: db.name }),
     el('span', { class: 'tbadge', text: db.tables }));
@@ -218,6 +225,8 @@ function renderDb(meta, cs, db, isCurrent) {
   const kids = el('div', { class: 'tkids', style: { display: expanded ? '' : 'none' } });
   if (expanded) fillDbChildren(meta, cs, db, kids);
   row._toggle = toggleDb;
+  // Direct handler on the chevron: single click always toggles expand/collapse.
+  chev.addEventListener('click', (e) => { e.stopPropagation(); toggleDb(); });
 
   async function toggleDb() {
     const set = (cs.expandedDbs ||= new Set());

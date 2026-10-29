@@ -415,7 +415,7 @@ function buildEditorView(tab, view, connId, db) {
     logResult(`✓ ${sets.length} statement(s), ${fmtRows(totalRows)} row(s) · ${ms} ms`, true);
     window.wjds.appTime?.();
     setStatusTimeSafe(ms);
-    pushHistory(sql, true, ms);
+    pushHistory(lastSQL, true, ms);
   }
 
   function fmtRows(n) { return n + ' row' + (n === 1 ? '' : 's'); }
