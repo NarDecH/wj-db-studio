@@ -94,7 +94,7 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "weeradech",
+      "owner": "NarDecH",
       "repo": "wj-db-studio"
     }
   }
