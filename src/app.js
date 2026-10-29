@@ -305,6 +305,7 @@ function initMenuActions() {
       case 'schema-compare': import('./schemacompare.js').then(m => m.compareDialog()); break;
       case 'export-connections': import('./connections.js').then(m => m.exportConnections()); break;
       case 'import-connections': import('./connections.js').then(m => m.importConnections()); break;
+      case 'mock-data': import('./mockdata.js').then(m => m.mockDialog()); break;
       case 'connect-active': {
         const meta = connMeta(state.currentConnId);
         if (meta) await window.wjds.dbConnect(meta.id);

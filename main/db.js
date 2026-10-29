@@ -562,6 +562,56 @@ class DBManager {
     return s;
   }
 
+  // ================= mock data =================
+
+  /** Fill a table with generated data matched to column types/names. */
+  async mockFillTable(connId, { db, table, rows = 100, truncateFirst = false, batchSize = 200 }) {
+    if (this._isReadOnly(connId)) throw new Error('🔒 This connection is READ-ONLY');
+    const cols = (await this.tableColumns(connId, db, table)).filter(c =>
+      c.extra !== 'auto_increment' && !/^(BIN|VARBIN|BLOB|TINYBLOB|MEDIUMBLOB|LONGBLOB|GEOM)/i.test(c.type));
+    if (!cols.length) throw new Error('No generatable columns');
+
+    // generator lives in the renderer? No — self-contained here:
+    const FIRST = ['Somchai', 'Somying', 'Malee', 'John', 'Anna', 'Peter', 'Somjai', 'Krit', 'Mary'];
+    const LAST = ['Jaidee', 'Smith', 'Rakthai', 'Brown', 'Suwan', 'Lee', 'Parker'];
+    const CITY = ['Bangkok', 'Chiang Mai', 'Phuket', 'New York', 'London', 'Tokyo', 'Paris'];
+    const WORDS = 'lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor'.split(' ');
+    const rand = a => a[Math.floor(Math.random() * a.length)];
+    const pick = n => { const s = []; for (let i = 0; i < n; i++) s.push(rand(WORDS)); return s.join(' '); };
+    const gen = (col) => {
+      const name = col.name.toLowerCase();
+      const type = String(col.type || '').toUpperCase();
+      if (/^ENUM\(/.test(type)) { const o = (type.match(/'((?:[^'\\]|\\.)*)'/g) || []).map(s => s.slice(1, -1)); return o.length ? rand(o) : null; }
+      if (/^(TINY|SMALL|MEDIUM)?INT|^BIGINT|BOOL/i.test(type)) return Math.floor(Math.random() * 10000);
+      if (/^DEC|^NUM|^FIX|^FLOAT|^DOUBLE|^REAL/.test(type)) return +(Math.random() * 10000).toFixed(2);
+      if (/^DATE$/.test(type)) return `20${20 + Math.floor(Math.random() * 7)}-${String(1 + Math.floor(Math.random() * 12)).padStart(2, '0')}-${String(1 + Math.floor(Math.random() * 28)).padStart(2, '0')}`;
+      if (/^DATETIME|^TIMESTAMP/.test(type)) return `20${20 + Math.floor(Math.random() * 7)}-${String(1 + Math.floor(Math.random() * 12)).padStart(2, '0')}-${String(1 + Math.floor(Math.random() * 28)).padStart(2, '0')} ${String(Math.floor(Math.random() * 24)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`;
+      if (/CHAR|TEXT/i.test(type)) {
+        if (/EMAIL/.test(name)) return rand(FIRST).toLowerCase() + Math.floor(Math.random() * 999) + '@example.com';
+        if (/NAME/.test(name)) return rand(FIRST) + ' ' + rand(LAST);
+        if (/CITY|PROVINCE/.test(name)) return rand(CITY);
+        if (/PHONE|TEL/.test(name)) return '08' + String(Math.floor(Math.random() * 100000000)).padStart(8, '0');
+        const size = type.match(/VARCHAR\((\d+)\)/);
+        const max = size ? Math.min(parseInt(size[1], 10), 60) : 60;
+        return pick(2 + Math.floor(Math.random() * 5)).slice(0, max);
+      }
+      return null;
+    };
+
+    if (truncateFirst) await this.exec(connId, 'TRUNCATE TABLE ' + DBManager.qRef(db, table), { db });
+    const colRefs = cols.map(c => DBManager.escId(c.name)).join(', ');
+    let count = 0;
+    for (let i = 0; i < rows; i += batchSize) {
+      const n = Math.min(batchSize, rows - i);
+      const values = [];
+      for (let k = 0; k < n; k++) values.push('(' + cols.map(c => DBManager.escValue(gen(c))).join(', ') + ')');
+      await this.exec(connId, `INSERT INTO ${DBManager.qRef(db, table)} (${colRefs}) VALUES\n` + values.join(',\n'), { db });
+      count += n;
+    }
+    this._log('io', connId, `-- MOCK DATA ${db}.${table} (${count} rows)`, null, count, true, null, db);
+    return { count, columns: cols.map(c => c.name) };
+  }
+
   // ================= schema compare =================
 
   /** Structure snapshot of a database: tables -> {columns, indexes}. */

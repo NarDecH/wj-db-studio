@@ -277,6 +277,7 @@ async function buildDataView(tab, view, connId, db, table, isView) {
       el('span', { class: 'st-sep' }),
       refreshBtn, addBtn, delBtn, saveBtn, revertBtn, npkHint,
       el('span', { style: { flex: '1' } }),
+      el('button', { class: 'mini-btn', onclick: () => import('./chart.js').then(m => m.chartDialog(fields, rows.slice(0, 500))) }, ic('chart'), el('span', { text: t('chart.btn') })),
       exportBtn,
       el('span', { class: 'pager' }, bFirst, bPrev, pgInfo, bNext, bLast)),
     gridWrap);

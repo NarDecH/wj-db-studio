@@ -128,6 +128,9 @@ export const I18N = {
     'cmp.sql': 'Migration SQL (target ← source)', 'cmp.save': 'Save migration SQL',
     'connx.export': 'Export Connections (no passwords)…', 'connx.import': 'Import Connections…',
     'connx.exported': 'Exported {n} connection(s) to {f} — passwords are not included', 'connx.imported': 'Imported {n} connection(s) — re-enter passwords when connecting',
+    'chart.title': 'Result chart', 'chart.btn': 'Chart', 'chart.bar': 'Bar', 'chart.line': 'Line', 'chart.nonum': 'No numeric column to chart',
+    'mock.title': 'Generate mock data', 'mock.rows': 'Rows to generate', 'mock.hint': 'Values are generated per column type and name (names, emails, cities, dates, numbers…).',
+    'mock.run': 'Generate', 'mock.done': 'Generated {n} row(s)',
   },
 
   th: {
@@ -255,6 +258,9 @@ export const I18N = {
     'cmp.sql': 'SQL สำหรับแก้ปลายทางให้เหมือนต้นแบบ', 'cmp.save': 'บันทึก SQL migration',
     'connx.export': 'ส่งออกรายการเชื่อมต่อ (ไม่รวมรหัสผ่าน)…', 'connx.import': 'นำเข้ารายการเชื่อมต่อ…',
     'connx.exported': 'ส่งออก {n} การเชื่อมต่อ ไปที่ {f} — ไม่รวมรหัสผ่าน', 'connx.imported': 'นำเข้า {n} การเชื่อมต่อ — กรุณากรอกรหัสผ่านใหม่ตอนเชื่อมต่อ',
+    'chart.title': 'กราฟจากผลลัพธ์', 'chart.btn': 'กราฟ', 'chart.bar': 'แท่ง', 'chart.line': 'เส้น', 'chart.nonum': 'ไม่มีคอลัมน์ตัวเลขให้วาดกราฟ',
+    'mock.title': 'สร้างข้อมูลทดสอบ (Mock data)', 'mock.rows': 'จำนวนแถว', 'mock.hint': 'สร้างค่าอัตโนมัติตามชนิดและชื่อคอลัมน์ (ชื่อ อีเมล เมือง วันที่ ตัวเลข…)',
+    'mock.run': 'สร้าง', 'mock.done': 'สร้างแล้ว {n} แถว',
   },
 };
 

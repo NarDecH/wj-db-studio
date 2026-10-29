@@ -444,8 +444,9 @@ function buildEditorView(tab, view, connId, db) {
         grid.setData(set.fields, set.rows);
         const bar = el('div', { style: { display: 'flex', gap: '6px', padding: '6px 10px', borderTop: '1px solid var(--border)', background: 'var(--bg1)', alignItems: 'center' } },
           el('span', { class: 'muted', text: `${fmtRows(set.rows.length)} · ${ms} ms` }),
-          el('span', { style: { flex: '1' } }),
-          el('button', { class: 'mini-btn', onclick: () => exportSet(set) }, ic('export'), el('span', { text: t('grid.export') })));
+        el('span', { style: { flex: '1' } }),
+        el('button', { class: 'mini-btn', onclick: () => import('./chart.js').then(m => m.chartDialog(set.fields, set.rows.slice(0, 500))) }, ic('chart'), el('span', { text: t('chart.btn') })),
+        el('button', { class: 'mini-btn', onclick: () => exportSet(set) }, ic('export'), el('span', { text: t('grid.export') })));
         pane.append(bar);
       } else {
         pane.append(el('div', { class: 'res-msg', text: 'OK' }));

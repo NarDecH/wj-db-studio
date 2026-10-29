@@ -87,6 +87,7 @@ const api = {
   transferTable: (args) => invoke('db:transferTable')(args),
   schemaSnapshot: (connId, db) => invoke('db:schemaSnapshot')(connId, db),
   buildMigrationSql: (args) => invoke('db:buildMigrationSql')(args),
+  mockFillTable: (args) => invoke('db:mockFillTable')(args),
   runSqlFile: (args) => invoke('io:runSqlFile')(args),
   backup: (args) => invoke('io:backup')(args),
 
