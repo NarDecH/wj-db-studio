@@ -51,12 +51,13 @@ export async function renderSqlLog() {
   list.append(el('div', { style: { display: 'flex', gap: '10px', alignItems: 'center', padding: '2px 8px 6px' } }, badge));
 
   let shown = 0;
+  const seen = new Set(live.map(e => (e.ts || '') + '|' + (e.sql || '')));
   for (const e of live) {           // real-time entries first
     if (!matchFilter(e)) continue;
     list.append(makeRow(e)); shown++;
   }
-  for (const e of entries) {        // older file entries (skip ones already shown live)
-    if (sessionStart && e.ts >= sessionStart) continue;
+  for (const e of entries) {        // older file entries (dedupe by ts+sql)
+    if (seen.has((e.ts || '') + '|' + (e.sql || ''))) continue;
     if (!matchFilter(e)) continue;
     list.append(makeRow(e)); shown++;
   }
