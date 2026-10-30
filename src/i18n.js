@@ -42,6 +42,8 @@ export const I18N = {
     'ctx.import': 'Import Data…', 'ctx.export': 'Export…',
     'ctx.confirmDrop': 'DROP {type} {name}?\nThis cannot be undone!', 'ctx.confirmTrunc': 'TRUNCATE {name}?\nAll rows will be deleted!',
     'ctx.dropped': 'Dropped', 'ctx.newtable': 'New Table…',
+    'ctx.newview': 'New View…', 'ctx.newproc': 'New Stored Procedure…',
+    'ctx.newfunc': 'New Function…', 'ctx.newtrigger': 'New Trigger…', 'ctx.newevent': 'New Event…',
 
     'grid.filter': 'WHERE filter, e.g.  price > 100 AND name LIKE "a%"',
     'grid.rows': 'rows', 'grid.total': 'of {n}', 'grid.editing': 'Editing', 'grid.nopk':
@@ -174,7 +176,9 @@ export const I18N = {
     'ctx.disconnect': 'ตัดการเชื่อมต่อ',
     'ctx.import': 'นำเข้าข้อมูล…', 'ctx.export': 'ส่งออก…',
     'ctx.confirmDrop': 'ลบ {type} {name}?\nไม่สามารถย้อนกลับได้!', 'ctx.confirmTrunc': 'ล้างข้อมูลตาราง {name}?\nข้อมูลทั้งหมดจะถูกลบ!',
-    'ctx.dropped': 'ลบแล้ว', 'ctx.newtable': 'สร้างตาราง…',
+    'ctx.dropped': 'ลบแล้ว', 'ctx.newtable': 'สร้างตารางใหม่…',
+    'ctx.newview': 'สร้าง View ใหม่…', 'ctx.newproc': 'สร้าง Stored Procedure ใหม่…',
+    'ctx.newfunc': 'สร้าง Function ใหม่…', 'ctx.newtrigger': 'สร้าง Trigger ใหม่…', 'ctx.newevent': 'สร้าง Event ใหม่…',
 
     'grid.filter': 'เงื่อนไข WHERE เช่น  price > 100 AND name LIKE "a%"',
     'grid.rows': 'แถว', 'grid.total': 'จาก {n}', 'grid.editing': 'กำลังแก้ไข', 'grid.nopk':

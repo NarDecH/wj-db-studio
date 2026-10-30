@@ -221,6 +221,9 @@ function renderDb(meta, cs, db, isCurrent) {
       e.preventDefault();
       showContextMenu(e.clientX, e.clientY, [
         { label: t('er.title'), icon: 'chart', action: () => import('./erdiagram.js').then(m => m.openERDiagram({ connId: meta.id, db: db.name })) },
+        { label: t('ctx.newtable'), icon: 'table', action: () => import('./designer.js').then(m => m.openDesigner({ connId: meta.id, db: db.name })) },
+        ...createNewItems(meta, db).slice(1),
+        '-',
         { label: t('ctx.query'), icon: 'code', action: () => import('./editor.js').then(m => m.openEditor({ connId: meta.id, db: db.name })) },
         { label: t('ctx.import'), icon: 'import', action: () => import('./importer.js').then(m => m.importDialog(meta.id, db.name)) },
         { label: t('ctx.export'), icon: 'export', action: () => import('./importer.js').then(m => m.backupDialog(meta.id, db.name)) },
@@ -287,7 +290,21 @@ async function refreshDbChildren(meta, cs, db, kids) {
 
 async function renderObjGroup(meta, cs, db, attr, labelKey, icon, cls) {
   const node = el('div', { class: 'tnode' });
-  const groupRow = el('div', { class: 'trow', style: { color: 'var(--text-dim)' } },
+  const groupRow = el('div', {
+    class: 'trow', style: { color: 'var(--text-dim)' },
+    oncontextmenu: (e) => {
+      e.preventDefault();
+      showContextMenu(e.clientX, e.clientY, [
+        ...createNewItems(meta, db).filter(x => x.label === t('ctx.newtable') || x.label === t('ctx.newview') || x.label === t('ctx.newproc') || x.label === t('ctx.newfunc') || x.label === t('ctx.newtrigger') || x.label === t('ctx.newevent')).filter(x => {
+          // show only the matching create action for this group
+          const map = { tables: t('ctx.newtable'), views: t('ctx.newview'), procs: t('ctx.newproc'), funcs: t('ctx.newfunc'), triggers: t('ctx.newtrigger'), events: t('ctx.newevent') };
+          return x.label === map[attr];
+        }),
+        '-',
+        { label: t('ctx.refresh'), icon: 'refresh', action: () => { items = null; groupKids.innerHTML = ''; groupRow.dispatchEvent(new MouseEvent('click', { bubbles: true })); } },
+      ]);
+    },
+  },
     el('span', { class: 'chev leaf', html: ic('chevron-right').innerHTML }),
     ic(icon, 'ticon ' + cls),
     el('span', { class: 'tlabel', text: t(labelKey) }),
@@ -433,6 +450,23 @@ export async function renameDialog(connId, db, oldName) {
     ],
   });
   setTimeout(() => inp.focus(), 60);
+}
+
+/** "Create new" menu items for every object type of a database. */
+function createNewItems(meta, db) {
+  const openWith = (sql) => import('./editor.js').then(m => {
+    const tab = m.openEditor({ connId: meta.id, db: db.name });
+    setTimeout(() => tab && tab.payload.setSQL(sql), 350);
+  });
+  const q = (s) => '`' + db.name + '`';
+  return [
+    { label: t('ctx.newtable'), icon: 'table', action: () => hooks.openDesigner({ connId: meta.id, db: db.name }) },
+    { label: t('ctx.newview'), icon: 'view', action: () => openWith(`-- ${t('ctx.newview')}\nUSE ${q()};\nCREATE OR REPLACE VIEW new_view AS\nSELECT c.id, c.name\nFROM customers c\nWHERE c.id > 0;`) },
+    { label: t('ctx.newproc'), icon: 'proc', action: () => openWith(`-- ${t('ctx.newproc')} (single-statement body)\nUSE ${q()};\nCREATE PROCEDURE new_proc()\nSELECT 1;`) },
+    { label: t('ctx.newfunc'), icon: 'proc', action: () => openWith(`-- ${t('ctx.newfunc')}\nUSE ${q()};\nCREATE FUNCTION new_func() RETURNS INT\nDETERMINISTIC\nRETURN 1;`) },
+    { label: t('ctx.newtrigger'), icon: 'trigger', action: () => openWith(`-- ${t('ctx.newtrigger')}\nUSE ${q()};\nCREATE TRIGGER new_trigger AFTER INSERT ON customers\nFOR EACH ROW SET @touched := NEW.id;`) },
+    { label: t('ctx.newevent'), icon: 'event', action: () => openWith(`-- ${t('ctx.newevent')} (ต้องเปิด event scheduler: SET GLOBAL event_scheduler=ON)\nUSE ${q()};\nCREATE EVENT new_event\nON SCHEDULE EVERY 1 DAY\nDO SELECT 1;`) },
+  ];
 }
 
 function createDbDialog(meta, cs) {
