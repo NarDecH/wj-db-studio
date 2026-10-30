@@ -32,12 +32,17 @@ class DBManager {
 
   /** Central SQL audit hook — every statement passes through here. */
   _log(type, connId, sql, ms, rows, ok, error, db) {
-    if (!this.sqllog) return;
     const meta = this.store ? this.store.data.connections.find(c => c.id === connId) : null;
-    this.sqllog.write({
+    const entry = {
+      ts: new Date().toISOString(),
       type, connId, conn: meta ? meta.name : connId, db,
-      sql, ms, rows, ok, error,
-    });
+      sql: sql ? String(sql).slice(0, 300) : '',
+      ms: ms != null ? ms : null, rows: rows != null ? rows : null, ok: ok !== false,
+      error: ok === false && error ? String(error).slice(0, 300) : undefined,
+    };
+    if (this.sqllog) this.sqllog.write(entry);
+    // real-time push to the renderer (SQL Log pane)
+    this.notify('sql:entry', entry);
   }
 
   // ================= connection =================
